@@ -1,14 +1,17 @@
+import logging
+
 from aiogram import Bot, F, Router
 from aiogram.filters import Command, CommandStart, StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
 
-import db
-from config import ADMIN_ID
+from config import SETTINGS
 from keyboards import confirm_kb, countries_kb, main_menu_kb, order_status_kb
+from repositories import orders as order_repository
 from states import OrderForm
 
 router = Router()
+logger = logging.getLogger(__name__)
 
 
 # --- команды и кнопки главного меню (проверяются раньше состояний FSM,
@@ -45,14 +48,14 @@ async def new_order(message: Message, state: FSMContext):
 
 @router.message(F.text == "📋 Мои заявки")
 async def my_orders(message: Message, pool):
-    orders = await db.get_user_orders(pool, message.from_user.id)
+    orders = await order_repository.get_user_orders(pool, message.from_user.id)
     if not orders:
         await message.answer("У тебя пока нет заявок. Нажми «📦 Новая заявка», чтобы создать первую.")
         return
 
     lines = ["📋 Твои заявки:\n"]
     for order in orders:
-        status_label = db.STATUS_LABELS.get(order["status"], order["status"])
+        status_label = order_repository.STATUS_LABELS.get(order["status"], order["status"])
         lines.append(
             f"№{order['id']} · {order['name']} · {order['weight']} кг · {order['country']} — {status_label}"
         )
@@ -135,7 +138,7 @@ async def process_confirm(callback: CallbackQuery, state: FSMContext, bot: Bot, 
         return
 
     data = await state.get_data()
-    order_id = await db.add_order(
+    order_id = await order_repository.add_order(
         pool,
         user_id=callback.from_user.id,
         username=callback.from_user.username,
@@ -147,17 +150,20 @@ async def process_confirm(callback: CallbackQuery, state: FSMContext, bot: Bot, 
     await callback.message.edit_text(f"✅ Заявка №{order_id} создана! Мы свяжемся с тобой по деталям доставки.")
     await callback.answer()
 
-    if callback.from_user.id != ADMIN_ID:
+    if callback.from_user.id != SETTINGS.admin_id:
         try:
             await bot.send_message(
-                ADMIN_ID,
+                SETTINGS.admin_id,
                 f"🧠 Новая заявка №{order_id}\n"
                 f"От: @{callback.from_user.username or callback.from_user.id}\n"
                 f"📦 {data['name']}, {data['weight']} кг → {data['country']}",
                 reply_markup=order_status_kb(order_id, "new"),
             )
         except Exception:
-            pass  # админ мог заблокировать бота — не роняем флоу пользователя из-за этого
+            logger.exception(
+                "Failed to notify admin about a new order",
+                extra={"order_id": order_id},
+            )
 
 
 # --- заглушка для всего, что не попало ни в одно состояние ---

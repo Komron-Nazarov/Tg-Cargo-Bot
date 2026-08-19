@@ -1,32 +1,3 @@
-# import asyncio
-# from aiogram import Bot, Dispatcher
-# from config import BOT_TOKEN
-# from handlers import router
-
-# bot = Bot(token=BOT_TOKEN)
-# dp = Dispatcher()
-
-# dp.include_router(router)
-
-# async def main():
-#     print("Bot started...")
-#     await dp.start_polling(bot)
-
-# if __name__ == "__main__":
-#     asyncio.run(main())
-# else:
-#     print("Bot stopped.")
-
-
-
-
-
-
-
-
-
-
-
 import asyncio
 import logging
 
@@ -36,9 +7,10 @@ from aiogram.enums import ParseMode
 from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.types import BotCommand, BotCommandScopeChat
 
-import db
-from config import ADMIN_ID, BOT_TOKEN, DB_DSN, DB_SSL
+from config import SETTINGS
+from database import create_pool
 from handlers import admin, user
+from migrations.runner import run_migrations
 
 logging.basicConfig(level=logging.INFO)
 
@@ -54,20 +26,22 @@ async def set_commands(bot: Bot) -> None:
             BotCommand(command="cancel", description="Отменить текущую заявку"),
             BotCommand(command="orders", description="Список новых заявок (админ)"),
         ],
-        scope=BotCommandScopeChat(chat_id=ADMIN_ID),
+        scope=BotCommandScopeChat(chat_id=SETTINGS.admin_id),
     )
 
 
 async def main():
-    bot = Bot(token=BOT_TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
+    bot = Bot(
+        token=SETTINGS.bot_token,
+        default=DefaultBotProperties(parse_mode=ParseMode.HTML),
+    )
     dp = Dispatcher(storage=MemoryStorage())
 
-    # Пул соединений создаётся один раз при старте, а не блокирующим вызовом
-    # на уровне модуля, как было в первой версии db.py
-    pool = await db.create_pool(DB_DSN, ssl_mode=DB_SSL)
-    dp["pool"] = pool  # прокидывается во все хендлеры как именованный параметр
+    pool = await create_pool(SETTINGS)
+    await run_migrations(pool)
+    dp["pool"] = pool
 
-    dp.include_router(admin.router)  # раньше user.router, чтобы /orders не перехватывался
+    dp.include_router(admin.router)
     dp.include_router(user.router)
 
     await set_commands(bot)
