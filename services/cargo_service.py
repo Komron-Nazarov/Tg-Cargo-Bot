@@ -7,9 +7,11 @@ from typing import Any, Mapping, Optional, Sequence
 
 STATUS_RECEIVED_CHINA = "received_china"
 STATUS_CONSOLIDATED = "consolidated"
+STATUS_SHIPPED_CHINA = "shipped_china"
 CARGO_STATUS_LABELS = {
     STATUS_RECEIVED_CHINA: "Принят на китайском складе",
     STATUS_CONSOLIDATED: "Консолидирован",
+    STATUS_SHIPPED_CHINA: "Выехал из Китая",
 }
 CARGO_CODE_RE = re.compile(r"CG\d{6,}")
 

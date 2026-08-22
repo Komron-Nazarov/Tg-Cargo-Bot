@@ -8,6 +8,14 @@ from services.cargo_service import normalize_cargo_code
 
 
 CONSOLIDATION_CODE_RE = re.compile(r"CS\d{6,}")
+CONSOLIDATION_STATUS_LABELS = {
+    "consolidated_china": "Консолидирован на китайском складе",
+    "shipped_china": "Выехал из Китая",
+}
+
+
+def consolidation_status_label(status: str) -> str:
+    return CONSOLIDATION_STATUS_LABELS.get(status, escape(status))
 
 
 def format_consolidation_code(internal_id: int) -> str:
@@ -144,7 +152,7 @@ def format_client_consolidation(consolidation: Mapping[str, Any]) -> str:
         f"🔗 <b>Консолидация <code>{escape(str(consolidation['consolidation_code']))}</code></b>",
         f"Cargo: <code>{_codes(consolidation['cargo_codes'])}</code>",
         f"Tracking Number: <code>{_codes(consolidation['tracking_numbers'])}</code>",
-        "Статус: Консолидирован на китайском складе",
+        f"Статус: {consolidation_status_label(str(consolidation.get('status', 'consolidated_china')))}",
         f"Итоговый вес: {_decimal(consolidation['final_weight_kg'], 3)} кг",
         f"Итоговый объём: {volume}",
         f"Количество мест: {consolidation['final_pieces_count']}",
@@ -188,7 +196,7 @@ def format_admin_consolidation(
                 f"Описание: {escape(str(consolidation.get('description') or 'не указано'))}",
                 f"Итоговый объём: {volume}",
                 f"Фотографий: {consolidation.get('photos_count', 0)}",
-                "Статус: Консолидирован на китайском складе",
+                f"Статус: {consolidation_status_label(str(consolidation.get('status', 'consolidated_china')))}",
             ]
         )
     return "\n".join(lines)

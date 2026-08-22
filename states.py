@@ -39,3 +39,11 @@ class ConsolidationForm(StatesGroup):
     pieces = State()
     photos = State()
     confirm = State()
+
+
+class ShipmentForm(StatesGroup):
+    start_confirm = State()
+    transport = State()
+    reference = State()
+    note = State()
+    confirm = State()

@@ -5,7 +5,7 @@ from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.types import BotCommand, BotCommandScopeChat
 
 from config import Settings
-from handlers import admin, cargo, client, consolidation, tracking, user, warehouse
+from handlers import admin, cargo, client, consolidation, shipment, tracking, user, warehouse
 
 
 def create_bot(settings: Settings) -> Bot:
@@ -21,6 +21,7 @@ def create_dispatcher(settings: Settings) -> Dispatcher:
     dispatcher.include_router(admin.router)
     dispatcher.include_router(warehouse.router)
     dispatcher.include_router(consolidation.router)
+    dispatcher.include_router(shipment.router)
     dispatcher.include_router(client.router)
     dispatcher.include_router(tracking.router)
     dispatcher.include_router(cargo.router)
@@ -46,6 +47,9 @@ async def set_commands(bot: Bot, admin_id: int) -> None:
             BotCommand(command="consolidate", description="Объединить Cargo (админ)"),
             BotCommand(command="consolidations", description="Список консолидаций (админ)"),
             BotCommand(command="consolidation", description="Найти консолидацию (админ)"),
+            BotCommand(command="dispatch", description="Оформить выезд из Китая (админ)"),
+            BotCommand(command="shipments", description="Последние отправления (админ)"),
+            BotCommand(command="shipment", description="Найти отправление (админ)"),
         ],
         scope=BotCommandScopeChat(chat_id=admin_id),
     )

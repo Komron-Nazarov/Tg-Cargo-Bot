@@ -9,6 +9,7 @@ MAIN_MENU_BUTTONS = [
     "🔎 Китайские трек-номера",
     "🚚 Мои грузы",
     "🔗 Мои консолидации",
+    "🚛 Мои отправления",
 ]
 
 COUNTRIES = ["🇹🇯 Таджикистан", "🇨🇳 Китай", "🇹🇷 Турция"]
@@ -175,6 +176,39 @@ def consolidation_photos_kb(consolidation_code: str) -> InlineKeyboardMarkup:
         text="📷 Показать фотографии",
         callback_data=f"consolidation_view_photos:{consolidation_code}",
     )
+    return builder.as_markup()
+
+
+def shipment_start_kb(first_code: str) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.button(text="✅ Начать оформление", callback_data=f"shipment_start:{first_code}")
+    builder.button(text="❌ Отмена", callback_data="shipment_start:cancel")
+    builder.adjust(1)
+    return builder.as_markup()
+
+
+def shipment_transport_kb() -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    for text, value in (
+        ("🚛 Автомобиль", "truck"),
+        ("✈️ Авиа", "air"),
+        ("🚆 Железная дорога", "rail"),
+        ("📦 Другое", "other"),
+    ):
+        builder.button(text=text, callback_data=f"shipment_transport:{value}")
+    builder.adjust(2)
+    return builder.as_markup()
+
+
+def shipment_confirm_kb(first_code: str) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.button(
+        text="✅ Подтвердить выезд из Китая",
+        callback_data=f"shipment_accept:{first_code}",
+    )
+    builder.button(text="✏️ Начать заново", callback_data="shipment_confirm:restart")
+    builder.button(text="❌ Отмена", callback_data="shipment_confirm:cancel")
+    builder.adjust(1)
     return builder.as_markup()
 
 
