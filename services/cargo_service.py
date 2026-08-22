@@ -6,6 +6,11 @@ from typing import Any, Mapping, Optional, Sequence
 
 
 STATUS_RECEIVED_CHINA = "received_china"
+STATUS_CONSOLIDATED = "consolidated"
+CARGO_STATUS_LABELS = {
+    STATUS_RECEIVED_CHINA: "Принят на китайском складе",
+    STATUS_CONSOLIDATED: "Консолидирован",
+}
 CARGO_CODE_RE = re.compile(r"CG\d{6,}")
 
 
@@ -75,6 +80,10 @@ def normalize_cargo_code(value: str) -> str:
     return code
 
 
+def cargo_status_label(status: str) -> str:
+    return CARGO_STATUS_LABELS.get(status, escape(status))
+
+
 def _date(value: Any) -> str:
     return value.strftime("%d.%m.%Y %H:%M") if isinstance(value, datetime) else "—"
 
@@ -141,7 +150,7 @@ def format_client_cargo(cargo: Mapping[str, Any]) -> str:
     lines = [
         f"🚚 <b>Cargo <code>{escape(str(cargo['cargo_code']))}</code></b>",
         f"Tracking Number: <code>{escape(str(cargo['tracking_number']))}</code>",
-        "Статус: Принят на китайском складе",
+        f"Статус: {cargo_status_label(str(cargo.get('status', STATUS_RECEIVED_CHINA)))}",
         f"Фактический вес: {_decimal(cargo['actual_weight_kg'], 3)} кг",
         f"Объём: {volume}",
         f"Количество мест: {cargo['pieces_count']}",
@@ -180,7 +189,7 @@ def format_admin_cargo(cargo: Mapping[str, Any], *, full: bool = False) -> str:
                 f"Описание: {escape(str(cargo.get('description') or 'не указано'))}",
                 f"Объём: {volume}",
                 f"Фотографий: {cargo.get('photos_count', 0)}",
-                "Статус: Принят на китайском складе",
+                f"Статус: {cargo_status_label(str(cargo.get('status', STATUS_RECEIVED_CHINA)))}",
             ]
         )
     return "\n".join(lines)

@@ -410,6 +410,7 @@ class CargoIntegrationSmokeTests(unittest.TestCase):
                 "002_create_clients.sql",
                 "003_create_china_trackings.sql",
                 "004_create_cargos.sql",
+                "005_create_consolidations.sql",
             ],
         )
 

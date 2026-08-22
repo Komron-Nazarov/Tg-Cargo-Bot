@@ -8,6 +8,7 @@ MAIN_MENU_BUTTONS = [
     "🏭 Адрес склада в Китае",
     "🔎 Китайские трек-номера",
     "🚚 Мои грузы",
+    "🔗 Мои консолидации",
 ]
 
 COUNTRIES = ["🇹🇯 Таджикистан", "🇨🇳 Китай", "🇹🇷 Турция"]
@@ -129,6 +130,50 @@ def cargo_photos_kb(cargo_code: str) -> InlineKeyboardMarkup:
     builder.button(
         text="📷 Показать фотографии",
         callback_data=f"cargo_photos:{cargo_code}",
+    )
+    return builder.as_markup()
+
+
+def consolidation_start_kb(first_cargo_code: str) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.button(
+        text="✅ Начать консолидацию",
+        callback_data=f"consolidation_start:{first_cargo_code}",
+    )
+    builder.button(text="❌ Отмена", callback_data="consolidation_start:cancel")
+    builder.adjust(1)
+    return builder.as_markup()
+
+
+def consolidation_photos_done_kb() -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.button(
+        text="✅ Завершить добавление фотографий",
+        callback_data="consolidation_photos:done",
+    )
+    return builder.as_markup()
+
+
+def consolidation_confirm_kb(first_cargo_code: str) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.button(
+        text="✅ Создать консолидацию",
+        callback_data=f"consolidation_accept:{first_cargo_code}",
+    )
+    builder.button(
+        text="✏️ Начать заново",
+        callback_data="consolidation_confirm:restart",
+    )
+    builder.button(text="❌ Отмена", callback_data="consolidation_confirm:cancel")
+    builder.adjust(1)
+    return builder.as_markup()
+
+
+def consolidation_photos_kb(consolidation_code: str) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.button(
+        text="📷 Показать фотографии",
+        callback_data=f"consolidation_view_photos:{consolidation_code}",
     )
     return builder.as_markup()
 

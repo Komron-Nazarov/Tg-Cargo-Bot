@@ -29,3 +29,13 @@ class WarehouseReceiptForm(StatesGroup):
     pieces = State()
     photos = State()
     confirm = State()
+
+
+class ConsolidationForm(StatesGroup):
+    start_confirm = State()
+    description = State()
+    weight = State()
+    volume = State()
+    pieces = State()
+    photos = State()
+    confirm = State()
