@@ -1,11 +1,12 @@
 import logging
 
 from aiogram import Bot, F, Router
-from aiogram.filters import Command, CommandStart, StateFilter
+from aiogram.filters import StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
 
 from config import Settings
+from handlers.client import require_registered_client
 from keyboards import confirm_kb, countries_kb, main_menu_kb, order_status_kb
 from repositories import orders as order_repository
 from states import OrderForm
@@ -14,31 +15,10 @@ router = Router()
 logger = logging.getLogger(__name__)
 
 
-# --- команды и кнопки главного меню (проверяются раньше состояний FSM,
-# чтобы не быть случайно "съеденными" обработчиком текста внутри формы) ---
-
-@router.message(CommandStart())
-async def cmd_start(message: Message, state: FSMContext):
-    await state.clear()
-    await message.answer(
-        "🚚 Привет! Это карго бот.\n\n"
-        "Помогу оформить заявку на доставку груза. Нажми «📦 Новая заявка», "
-        "чтобы начать, или «📋 Мои заявки», чтобы посмотреть статус уже оформленных.",
-        reply_markup=main_menu_kb(),
-    )
-
-
-@router.message(Command("cancel"))
-async def cmd_cancel(message: Message, state: FSMContext):
-    if await state.get_state() is None:
-        await message.answer("Сейчас нечего отменять 🙂", reply_markup=main_menu_kb())
-        return
-    await state.clear()
-    await message.answer("❌ Заявка отменена.", reply_markup=main_menu_kb())
-
-
 @router.message(F.text == "📦 Новая заявка")
-async def new_order(message: Message, state: FSMContext):
+async def new_order(message: Message, state: FSMContext, pool):
+    if await require_registered_client(message, state, pool) is None:
+        return
     await state.set_state(OrderForm.name)
     await message.answer(
         "📦 Введи имя груза (например: «Коробка с одеждой»):\n\n"
@@ -47,7 +27,9 @@ async def new_order(message: Message, state: FSMContext):
 
 
 @router.message(F.text == "📋 Мои заявки")
-async def my_orders(message: Message, pool):
+async def my_orders(message: Message, state: FSMContext, pool):
+    if await require_registered_client(message, state, pool) is None:
+        return
     orders = await order_repository.get_user_orders(pool, message.from_user.id)
     if not orders:
         await message.answer("У тебя пока нет заявок. Нажми «📦 Новая заявка», чтобы создать первую.")

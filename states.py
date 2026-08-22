@@ -6,3 +6,11 @@ class OrderForm(StatesGroup):
     weight = State()
     country = State()
     confirm = State()
+
+
+class RegistrationForm(StatesGroup):
+    full_name = State()
+    phone = State()
+    city = State()
+    custom_city = State()
+    confirm = State()

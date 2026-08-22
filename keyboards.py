@@ -1,7 +1,12 @@
 from aiogram.types import InlineKeyboardMarkup, ReplyKeyboardMarkup
 from aiogram.utils.keyboard import InlineKeyboardBuilder, ReplyKeyboardBuilder
 
-MAIN_MENU_BUTTONS = ["📦 Новая заявка", "📋 Мои заявки"]
+MAIN_MENU_BUTTONS = [
+    "📦 Новая заявка",
+    "📋 Мои заявки",
+    "👤 Мой профиль",
+    "🏭 Адрес склада в Китае",
+]
 
 COUNTRIES = ["🇹🇯 Таджикистан", "🇨🇳 Китай", "🇹🇷 Турция"]
 
@@ -12,6 +17,37 @@ def main_menu_kb() -> ReplyKeyboardMarkup:
         builder.button(text=text)
     builder.adjust(2)
     return builder.as_markup(resize_keyboard=True)
+
+
+def registration_prompt_kb() -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.button(text="📝 Зарегистрироваться", callback_data="register:start")
+    return builder.as_markup()
+
+
+def phone_kb() -> ReplyKeyboardMarkup:
+    builder = ReplyKeyboardBuilder()
+    builder.button(text="📱 Отправить мой номер", request_contact=True)
+    builder.adjust(1)
+    return builder.as_markup(resize_keyboard=True, one_time_keyboard=True)
+
+
+def registration_cities_kb() -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.button(text="Душанбе", callback_data="register_city:Душанбе")
+    builder.button(text="Худжанд", callback_data="register_city:Худжанд")
+    builder.button(text="Другой город", callback_data="register_city:other")
+    builder.adjust(2, 1)
+    return builder.as_markup()
+
+
+def registration_confirm_kb() -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.button(text="✅ Подтвердить", callback_data="register_confirm:yes")
+    builder.button(text="✏️ Начать заново", callback_data="register_confirm:restart")
+    builder.button(text="❌ Отмена", callback_data="register_confirm:cancel")
+    builder.adjust(1)
+    return builder.as_markup()
 
 
 def countries_kb() -> InlineKeyboardMarkup:

@@ -24,6 +24,9 @@ class Settings:
     webhook_path: str
     webhook_secret: Optional[str]
     port: int
+    china_warehouse_address: Optional[str]
+    china_warehouse_recipient: Optional[str]
+    china_warehouse_phone: Optional[str]
 
     @property
     def webhook_url(self) -> str:
@@ -116,4 +119,7 @@ def load_settings(environ: Optional[Mapping[str, str]] = None) -> Settings:
         webhook_path=webhook_path,
         webhook_secret=webhook_secret,
         port=port,
+        china_warehouse_address=environ.get("CHINA_WAREHOUSE_ADDRESS", "").strip() or None,
+        china_warehouse_recipient=environ.get("CHINA_WAREHOUSE_RECIPIENT", "").strip() or None,
+        china_warehouse_phone=environ.get("CHINA_WAREHOUSE_PHONE", "").strip() or None,
     )
