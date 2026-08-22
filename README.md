@@ -31,6 +31,9 @@ Telegram-бот на Python для регистрации клиентов и о
 - отдельный Delivery ID для каждого клиента внутри Shipment;
 - внутренняя доставка до статуса «Готов к получению»;
 - клиентский раздел «📍 Моя доставка»;
+- ручная фиксация фактической выдачи клиенту или представителю;
+- ручная фиксация оплаты в TJS с постоянным Payment ID вида `PY000001`;
+- завершение Delivery и связанных грузов только после выдачи и оплаты;
 - создание и просмотр существующих заявок;
 - управление статусами заявок администратором.
 
@@ -66,15 +69,21 @@ Telegram-бот на Python для регистрации клиентов и о
 /advance_delivery <Delivery ID>
 /deliveries
 /delivery <Delivery ID>
+/handover <Delivery ID>
+/handovers
+/record_payment <Delivery ID>
+/payments
+/payment <Payment ID или Delivery ID>
 ```
 
-## Client ID, Tracking Number, Cargo ID, Consolidation ID и Shipment ID
+## Client ID, Tracking Number, Cargo ID, Consolidation ID, Shipment ID и Payment ID
 
 - `Client ID` (`C000001`) определяет клиента и выдаётся один раз при регистрации.
 - `Chinese Tracking Number` выдаёт продавец или китайская служба доставки; клиент заранее добавляет его в бот.
 - `Cargo ID` (`CG000001`) создаёт бот только после фактического приёма посылки на китайском складе.
 - `Consolidation ID` (`CS000001`) создаётся после физического объединения нескольких Cargo одного клиента.
 - `Shipment ID` (`SH000001`) создаётся при фактическом выезде партии из Китая и может объединять грузы разных клиентов.
+- `Payment ID` (`PY000001`) создаётся после ручной фиксации оплаты за уже выданную Delivery.
 
 Эти идентификаторы не заменяют друг друга. Публичные ID не зависят от Telegram username и создаются PostgreSQL identity.
 
@@ -227,9 +236,9 @@ config.py               загрузка и проверка настроек
 database.py             создание asyncpg-пула
 runners/polling.py      Railway long polling
 runners/webhook.py      Render webhook и /health
-handlers/               Telegram-обработчики клиентов, склада, Cargo, консолидаций и Shipment
-repositories/           SQL-запросы всех бизнес-сущностей
-services/               валидация и форматирование бизнес-данных
+handlers/               Telegram-обработчики, включая completion.py для выдачи и оплаты
+repositories/           SQL-запросы, включая completions.py
+services/               валидация и форматирование, включая completion_service.py
 migrations/             механизм и SQL-файлы миграций
 tests/                  smoke-тесты без Telegram и PostgreSQL
 docs/                   спецификация Cargo MVP
@@ -238,6 +247,8 @@ docs/                   спецификация Cargo MVP
 ## Миграции
 
 Миграции из `migrations/sql` выполняются по имени файла. Версии и контрольные суммы записываются в `schema_migrations`.
+
+Оплата на текущем этапе фиксируется владельцем вручную. Бот не принимает деньги онлайн, не рассчитывает тариф автоматически и не заменяет бухгалтерскую или фискальную систему.
 
 Правила:
 
@@ -259,6 +270,8 @@ docs/                   спецификация Cargo MVP
 Миграция `007_create_shipment_events.sql` расширяет статусы Shipment, Cargo и Consolidation и создаёт неизменяемую историю `shipment_events`. Уникальность `(shipment_id, to_status)` защищает от повторного создания этапа. Миграция не редактирует `001–006` и не изменяет `orders`, `clients`, `china_trackings`, фотографии или состав Shipment.
 
 Миграция `008_create_pickup_deliveries.sql` создаёт `pickup_points`, `shipment_deliveries` и `delivery_events`, а также добавляет статусы внутреннего движения Cargo и Consolidation. Она не добавляет готовые пункты или адреса. Уникальность Shipment + Client разрешает только одну Delivery клиента в одной партии.
+
+Миграция `009_create_handovers_payments.sql` добавляет статусы фактической выдачи и завершения, создаёт `handover_records` и `payment_records`. Для одной Delivery разрешены ровно одна запись выдачи и одна запись оплаты. Сумма хранится как `NUMERIC(14,2)` в TJS, а Payment ID формируется из PostgreSQL identity. Паспортные данные, изображения документов и онлайн-оплата не сохраняются.
 
 ## Ручная проверка
 
@@ -311,6 +324,15 @@ docs/                   спецификация Cargo MVP
 47. Последовательно выполнить `/advance_delivery DL000001` до статуса «Готов к получению».
 48. Проверить запрет дальнейшего перехода, `/deliveries` и `/delivery DL000001`.
 49. Убедиться, что грузы других клиентов того же Shipment не изменились.
+50. Для готовой Delivery выполнить `/handover DL000001`.
+51. Выбрать самого клиента или представителя, заполнить безопасные данные получателя и подтвердить выдачу.
+52. Проверить статус «Выдан получателю», уведомление клиента и `/handovers`.
+53. Выполнить `/record_payment DL000001`, ввести сумму в TJS, способ оплаты, reference или `/skip` и примечание или `/skip`.
+54. Подтвердить оплату и получить Payment ID вида `PY000001`.
+55. Проверить `/payments`, `/payment PY000001` и `/payment DL000001`.
+56. Клиент открывает «📍 Моя доставка» и видит итоговый статус, сумму и Payment ID без внутренних примечаний.
+57. Повторная выдача или оплата не создаёт вторую запись; оплата до выдачи запрещена.
+58. Проверить, что Delivery, Cargo и Consolidation клиента завершены, а грузы других клиентов Shipment не изменились.
 
 ## Тесты
 

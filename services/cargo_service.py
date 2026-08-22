@@ -20,6 +20,8 @@ CARGO_STATUS_LABELS = {
     "domestic_transit": "Направлен в город получения",
     "arrived_pickup": "Прибыл в пункт выдачи",
     "ready_for_pickup": "Готов к получению",
+    "handed_over": "Выдан получателю",
+    "completed": "Доставка завершена",
 }
 CARGO_CODE_RE = re.compile(r"CG\d{6,}")
 

@@ -76,7 +76,8 @@ class DeliveryArchitectureTests(unittest.TestCase):
         self.assertEqual([x.name for x in sorted(MIGRATIONS_DIR.glob("*.sql"))],
             ["001_create_orders.sql","002_create_clients.sql","003_create_china_trackings.sql",
              "004_create_cargos.sql","005_create_consolidations.sql","006_create_shipments.sql",
-             "007_create_shipment_events.sql","008_create_pickup_deliveries.sql"])
+             "007_create_shipment_events.sql","008_create_pickup_deliveries.sql",
+             "009_create_handovers_payments.sql"])
 
 
 if __name__=="__main__": unittest.main()

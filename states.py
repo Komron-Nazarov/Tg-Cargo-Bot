@@ -72,3 +72,20 @@ class DeliveryAdvanceForm(StatesGroup):
     start_confirm = State()
     note = State()
     confirm = State()
+
+
+class HandoverForm(StatesGroup):
+    start_confirm = State()
+    recipient_type = State()
+    recipient_name = State()
+    recipient_phone = State()
+    note = State()
+    confirm = State()
+
+
+class PaymentForm(StatesGroup):
+    amount = State()
+    method = State()
+    reference = State()
+    note = State()
+    confirm = State()

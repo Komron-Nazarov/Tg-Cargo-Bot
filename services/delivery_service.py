@@ -14,6 +14,8 @@ STATUS_LABELS = {
     "domestic_transit": "Направлен в город получения",
     "arrived_pickup": "Прибыл в пункт выдачи",
     "ready_for_pickup": "Готов к получению",
+    "handed_over": "Выдан получателю",
+    "completed": "Доставка завершена",
 }
 
 
@@ -36,6 +38,7 @@ def delivery_status_label(status: str) -> str: return STATUS_LABELS.get(status, 
 
 
 def next_delivery_status(status: str) -> str:
+    if status in {"handed_over", "completed"}: raise FinalDeliveryStatusError("Delivery уже выдана или завершена")
     if status not in DELIVERY_STATUSES: raise InvalidDeliveryTransitionError("Неизвестный статус Delivery")
     pos = DELIVERY_STATUSES.index(status)
     if pos == len(DELIVERY_STATUSES) - 1: raise FinalDeliveryStatusError("Delivery уже готова к получению")
@@ -95,6 +98,16 @@ def format_delivery(delivery: Mapping[str, Any], events=(), *, admin=False) -> s
         f"Назначен: {_date(delivery.get('assigned_at'))}",
         f"Готов: {_date(delivery.get('ready_at'))}",
     ]
+    if delivery.get("handed_over_at"):
+        lines.append(f"Выдан: {_date(delivery.get('handed_over_at'))}")
+    if delivery.get("payment_code"):
+        payment_labels = {"cash": "Наличные", "bank_transfer": "Банковский перевод", "other": "Другое"}
+        lines.extend([
+            f"Payment ID: <code>{escape(str(delivery['payment_code']))}</code>",
+            f"Оплата: {Decimal(str(delivery['payment_amount'])):.2f} TJS",
+            f"Способ оплаты: {payment_labels.get(str(delivery.get('payment_method')), escape(str(delivery.get('payment_method'))))}",
+            f"Оплачено: {_date(delivery.get('paid_at'))}",
+        ])
     if admin:
         lines.insert(3, f"Клиент: {escape(str(delivery['full_name']))} · {escape(str(delivery['client_phone']))}")
     lines.extend(["", "<b>История:</b>", f"✅ {_date(delivery.get('assigned_at'))} — Назначен пункт выдачи"])
@@ -104,6 +117,10 @@ def format_delivery(delivery: Mapping[str, Any], events=(), *, admin=False) -> s
             line += f" · админ: <code>{event['created_by_telegram_id']}</code>"
             if event.get("note"): line += f" · {escape(str(event['note']))}"
         lines.append(line)
+    if delivery.get("handed_over_at"):
+        lines.append(f"✅ {_date(delivery.get('handed_over_at'))} — Выдан получателю")
+    if delivery.get("paid_at"):
+        lines.append(f"✅ {_date(delivery.get('paid_at'))} — Оплата зафиксирована, доставка завершена")
     return "\n".join(lines)
 
 

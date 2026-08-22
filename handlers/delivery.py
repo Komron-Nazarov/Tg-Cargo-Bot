@@ -165,7 +165,7 @@ async def advance_start(message:Message,command:CommandObject,state:FSMContext,p
     row=await delivery_repository.get_delivery_by_code(pool,code)
     if not row: await message.answer("Delivery не найдена."); return
     try: next_status=next_delivery_status(row["status"])
-    except FinalDeliveryStatusError: await message.answer("Delivery уже готова к получению. Следующего статуса пока нет."); return
+    except FinalDeliveryStatusError: await message.answer("Delivery уже готова к получению, выдана или завершена. Используйте отдельную команду /handover для выдачи."); return
     await state.clear(); await state.update_data(delivery_code=code,from_status=row["status"],to_status=next_status,delivery=dict(row)); await state.set_state(DeliveryAdvanceForm.start_confirm)
     await message.answer(format_delivery(row)+f"\n\nСледующий статус: {delivery_status_label(next_status)}",reply_markup=delivery_advance_start_kb(code))
 

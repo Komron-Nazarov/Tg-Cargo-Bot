@@ -280,6 +280,49 @@ def delivery_advance_confirm_kb(code: str) -> InlineKeyboardMarkup:
     return builder.as_markup()
 
 
+def handover_start_kb(code: str) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.button(text="✅ Оформить выдачу", callback_data=f"handover_start:{code}")
+    builder.button(text="❌ Отмена", callback_data="handover_start:cancel")
+    builder.adjust(1)
+    return builder.as_markup()
+
+
+def handover_recipient_kb() -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.button(text="👤 Сам клиент", callback_data="handover_recipient:client")
+    builder.button(text="👥 Представитель", callback_data="handover_recipient:representative")
+    builder.adjust(1)
+    return builder.as_markup()
+
+
+def handover_confirm_kb(code: str) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.button(text="✅ Подтвердить выдачу", callback_data=f"handover_accept:{code}")
+    builder.button(text="✏️ Начать заново", callback_data="handover_accept:restart")
+    builder.button(text="❌ Отмена", callback_data="handover_accept:cancel")
+    builder.adjust(1)
+    return builder.as_markup()
+
+
+def payment_method_kb() -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.button(text="💵 Наличные", callback_data="payment_method:cash")
+    builder.button(text="🏦 Банковский перевод", callback_data="payment_method:bank_transfer")
+    builder.button(text="📄 Другое", callback_data="payment_method:other")
+    builder.adjust(1)
+    return builder.as_markup()
+
+
+def payment_confirm_kb(code: str) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.button(text="✅ Зафиксировать оплату", callback_data=f"payment_accept:{code}")
+    builder.button(text="✏️ Начать заново", callback_data="payment_accept:restart")
+    builder.button(text="❌ Отмена", callback_data="payment_accept:cancel")
+    builder.adjust(1)
+    return builder.as_markup()
+
+
 def countries_kb() -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     for country in COUNTRIES:

@@ -10,6 +10,11 @@ DELIVERY_SELECT = """
     pp.name AS pickup_name, pp.address AS pickup_address, pp.phone AS pickup_phone,
     d.status, d.assigned_by_telegram_id, d.assigned_at, d.ready_at,
     d.created_at, d.updated_at,
+    (SELECT handed_over_at FROM handover_records h WHERE h.delivery_id=d.id) AS handed_over_at,
+    (SELECT payment_code FROM payment_records p WHERE p.delivery_id=d.id) AS payment_code,
+    (SELECT amount FROM payment_records p WHERE p.delivery_id=d.id) AS payment_amount,
+    (SELECT payment_method FROM payment_records p WHERE p.delivery_id=d.id) AS payment_method,
+    (SELECT paid_at FROM payment_records p WHERE p.delivery_id=d.id) AS paid_at,
     ARRAY(SELECT cg.cargo_code FROM shipment_items si JOIN cargos cg ON cg.id=si.cargo_id
           WHERE si.shipment_id=d.shipment_id AND cg.client_id=d.client_id ORDER BY si.position) AS cargo_codes,
     ARRAY(SELECT cs.consolidation_code FROM shipment_items si JOIN consolidations cs ON cs.id=si.consolidation_id
