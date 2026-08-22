@@ -43,3 +43,4 @@ async def run_migrations(pool: asyncpg.Pool) -> None:
                     version,
                     checksum,
                 )
+    logger.info("Database migrations completed")

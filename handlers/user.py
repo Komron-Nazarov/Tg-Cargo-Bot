@@ -5,7 +5,7 @@ from aiogram.filters import Command, CommandStart, StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
 
-from config import SETTINGS
+from config import Settings
 from keyboards import confirm_kb, countries_kb, main_menu_kb, order_status_kb
 from repositories import orders as order_repository
 from states import OrderForm
@@ -122,7 +122,13 @@ async def show_confirmation(message: Message, state: FSMContext):
 
 
 @router.callback_query(StateFilter(OrderForm.confirm), F.data.startswith("confirm:"))
-async def process_confirm(callback: CallbackQuery, state: FSMContext, bot: Bot, pool):
+async def process_confirm(
+    callback: CallbackQuery,
+    state: FSMContext,
+    bot: Bot,
+    pool,
+    settings: Settings,
+):
     action = callback.data.split(":", 1)[1]
 
     if action == "cancel":
@@ -150,10 +156,10 @@ async def process_confirm(callback: CallbackQuery, state: FSMContext, bot: Bot, 
     await callback.message.edit_text(f"✅ Заявка №{order_id} создана! Мы свяжемся с тобой по деталям доставки.")
     await callback.answer()
 
-    if callback.from_user.id != SETTINGS.admin_id:
+    if callback.from_user.id != settings.admin_id:
         try:
             await bot.send_message(
-                SETTINGS.admin_id,
+                settings.admin_id,
                 f"🧠 Новая заявка №{order_id}\n"
                 f"От: @{callback.from_user.username or callback.from_user.id}\n"
                 f"📦 {data['name']}, {data['weight']} кг → {data['country']}",
