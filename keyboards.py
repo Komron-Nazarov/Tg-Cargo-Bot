@@ -6,6 +6,7 @@ MAIN_MENU_BUTTONS = [
     "📋 Мои заявки",
     "👤 Мой профиль",
     "🏭 Адрес склада в Китае",
+    "🔎 Китайские трек-номера",
 ]
 
 COUNTRIES = ["🇹🇯 Таджикистан", "🇨🇳 Китай", "🇹🇷 Турция"]
@@ -46,6 +47,46 @@ def registration_confirm_kb() -> InlineKeyboardMarkup:
     builder.button(text="✅ Подтвердить", callback_data="register_confirm:yes")
     builder.button(text="✏️ Начать заново", callback_data="register_confirm:restart")
     builder.button(text="❌ Отмена", callback_data="register_confirm:cancel")
+    builder.adjust(1)
+    return builder.as_markup()
+
+
+def tracking_menu_kb() -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.button(text="➕ Добавить трек-номер", callback_data="tracking:add")
+    builder.button(text="📋 Мои трек-номера", callback_data="tracking:list")
+    builder.adjust(1)
+    return builder.as_markup()
+
+
+def tracking_confirm_kb() -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.button(text="✅ Сохранить", callback_data="tracking_confirm:save")
+    builder.button(text="✏️ Ввести заново", callback_data="tracking_confirm:restart")
+    builder.button(text="❌ Отмена", callback_data="tracking_confirm:cancel")
+    builder.adjust(1)
+    return builder.as_markup()
+
+
+def tracking_cancel_kb(tracking_id: int) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.button(
+        text="❌ Отменить трек-номер",
+        callback_data=f"tracking_cancel:{tracking_id}",
+    )
+    return builder.as_markup()
+
+
+def tracking_cancel_confirm_kb(tracking_id: int) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.button(
+        text="✅ Да, отменить",
+        callback_data=f"tracking_cancel_confirm:{tracking_id}:yes",
+    )
+    builder.button(
+        text="↩️ Нет",
+        callback_data=f"tracking_cancel_confirm:{tracking_id}:no",
+    )
     builder.adjust(1)
     return builder.as_markup()
 

@@ -14,3 +14,8 @@ class RegistrationForm(StatesGroup):
     city = State()
     custom_city = State()
     confirm = State()
+
+
+class TrackingForm(StatesGroup):
+    number = State()
+    confirm = State()
