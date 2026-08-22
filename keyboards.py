@@ -212,6 +212,32 @@ def shipment_confirm_kb(first_code: str) -> InlineKeyboardMarkup:
     return builder.as_markup()
 
 
+def shipment_advance_start_kb(shipment_code: str) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.button(
+        text="✅ Продолжить",
+        callback_data=f"shipment_advance_start:{shipment_code}",
+    )
+    builder.button(text="❌ Отмена", callback_data="shipment_advance_start:cancel")
+    builder.adjust(1)
+    return builder.as_markup()
+
+
+def shipment_advance_confirm_kb(shipment_code: str) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.button(
+        text="✅ Подтвердить новый статус",
+        callback_data=f"shipment_advance_accept:{shipment_code}",
+    )
+    builder.button(
+        text="✏️ Ввести примечание заново",
+        callback_data="shipment_advance_confirm:restart",
+    )
+    builder.button(text="❌ Отмена", callback_data="shipment_advance_confirm:cancel")
+    builder.adjust(1)
+    return builder.as_markup()
+
+
 def countries_kb() -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     for country in COUNTRIES:

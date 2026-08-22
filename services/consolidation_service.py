@@ -11,6 +11,10 @@ CONSOLIDATION_CODE_RE = re.compile(r"CS\d{6,}")
 CONSOLIDATION_STATUS_LABELS = {
     "consolidated_china": "Консолидирован на китайском складе",
     "shipped_china": "Выехал из Китая",
+    "in_transit": "В пути",
+    "arrived_tajikistan": "Прибыл в Таджикистан",
+    "customs_processing": "На таможенном оформлении",
+    "customs_cleared": "Таможня пройдена",
 }
 
 

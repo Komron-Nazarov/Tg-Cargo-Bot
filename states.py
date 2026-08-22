@@ -47,3 +47,9 @@ class ShipmentForm(StatesGroup):
     reference = State()
     note = State()
     confirm = State()
+
+
+class ShipmentAdvanceForm(StatesGroup):
+    start_confirm = State()
+    note = State()
+    confirm = State()

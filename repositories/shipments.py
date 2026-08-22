@@ -2,6 +2,10 @@ from typing import Mapping, Sequence
 
 import asyncpg
 
+from services.shipment_status_service import (
+    next_shipment_status,
+)
+
 
 CARGO_READY = "received_china"
 CONSOLIDATION_READY = "consolidated_china"
@@ -67,6 +71,15 @@ class DispatchObjectAlreadyShippedError(Exception):
 
 class DispatchObjectUnavailableError(Exception):
     def __init__(self, code: str): self.code = code
+
+
+class ShipmentNotFoundError(Exception):
+    def __init__(self, code: str):
+        self.code = code
+
+
+class ShipmentStatusChangedError(Exception):
+    pass
 
 
 def validate_dispatch_items(codes: Sequence[str], rows: Sequence[Mapping]):
@@ -268,7 +281,7 @@ async def list_client_shipment_units(pool: asyncpg.Pool, telegram_user_id: int, 
                 WHERE c.telegram_user_id=$1 ORDER BY sh.id DESC LIMIT $2
             )
             SELECT sh.id, sh.shipment_code, sh.transport_type, sh.transport_reference,
-                   sh.status, sh.departed_at, 'cargo' AS item_type,
+                   sh.status, sh.departed_at, sh.updated_at, 'cargo' AS item_type,
                    cg.cargo_code AS public_code, cg.client_id,
                    cg.actual_weight_kg AS weight_kg, cg.volume_m3, cg.pieces_count,
                    ARRAY[t.tracking_number] AS tracking_numbers, c.telegram_user_id
@@ -278,7 +291,7 @@ async def list_client_shipment_units(pool: asyncpg.Pool, telegram_user_id: int, 
             WHERE c.telegram_user_id=$1
             UNION ALL
             SELECT sh.id, sh.shipment_code, sh.transport_type, sh.transport_reference,
-                   sh.status, sh.departed_at, 'consolidation', cs.consolidation_code,
+                   sh.status, sh.departed_at, sh.updated_at, 'consolidation', cs.consolidation_code,
                    cs.client_id, cs.final_weight_kg, cs.final_volume_m3, cs.final_pieces_count,
                    ARRAY(SELECT t.tracking_number FROM consolidation_items ci2
                      JOIN cargos cg2 ON cg2.id=ci2.cargo_id
@@ -290,3 +303,151 @@ async def list_client_shipment_units(pool: asyncpg.Pool, telegram_user_id: int, 
             WHERE c.telegram_user_id=$1 ORDER BY id DESC""",
             telegram_user_id, limit,
         )
+
+
+async def list_shipment_events(pool: asyncpg.Pool, shipment_id: int):
+    async with pool.acquire() as conn:
+        return await conn.fetch(
+            """SELECT id, shipment_id, from_status, to_status, note,
+                      created_by_telegram_id, occurred_at, created_at
+               FROM shipment_events WHERE shipment_id=$1
+               ORDER BY occurred_at, id""",
+            shipment_id,
+        )
+
+
+async def _get_event(conn, shipment_id: int, to_status: str):
+    return await conn.fetchrow(
+        """SELECT id, shipment_id, from_status, to_status, note,
+                  created_by_telegram_id, occurred_at, created_at
+           FROM shipment_events WHERE shipment_id=$1 AND to_status=$2""",
+        shipment_id,
+        to_status,
+    )
+
+
+async def advance_shipment_status(
+    pool: asyncpg.Pool,
+    *,
+    shipment_code: str,
+    expected_from_status: str,
+    note: str | None,
+    created_by_telegram_id: int,
+):
+    async with pool.acquire() as conn:
+        async with conn.transaction():
+            shipment = await conn.fetchrow(
+                """SELECT id, shipment_code, status
+                   FROM shipments WHERE shipment_code=$1 FOR UPDATE""",
+                shipment_code,
+            )
+            if shipment is None:
+                raise ShipmentNotFoundError(shipment_code)
+
+            expected_to_status = next_shipment_status(expected_from_status)
+            if shipment["status"] != expected_from_status:
+                if shipment["status"] == expected_to_status:
+                    event = await _get_event(conn, shipment["id"], expected_to_status)
+                    if event is not None:
+                        return {
+                            "shipment": await _get_shipment_by_id(conn, shipment["id"]),
+                            "event": event,
+                            "created": False,
+                        }
+                raise ShipmentStatusChangedError()
+
+            event = await conn.fetchrow(
+                """INSERT INTO shipment_events (
+                       shipment_id, from_status, to_status, note,
+                       created_by_telegram_id
+                   ) VALUES ($1, $2, $3, $4, $5)
+                   RETURNING id, shipment_id, from_status, to_status, note,
+                             created_by_telegram_id, occurred_at, created_at""",
+                shipment["id"],
+                expected_from_status,
+                expected_to_status,
+                note,
+                created_by_telegram_id,
+            )
+
+            result = await conn.execute(
+                """UPDATE shipments SET status=$2, updated_at=now()
+                   WHERE id=$1 AND status=$3""",
+                shipment["id"],
+                expected_to_status,
+                expected_from_status,
+            )
+            if result != "UPDATE 1":
+                raise ShipmentStatusChangedError()
+
+            object_from_status = (
+                "shipped_china"
+                if expected_from_status == "departed_china"
+                else expected_from_status
+            )
+            standalone_count = await conn.fetchval(
+                "SELECT count(*) FROM shipment_items WHERE shipment_id=$1 AND cargo_id IS NOT NULL",
+                shipment["id"],
+            )
+            if standalone_count:
+                result = await conn.execute(
+                    """UPDATE cargos SET status=$2, updated_at=now()
+                       WHERE id IN (
+                           SELECT cargo_id FROM shipment_items
+                           WHERE shipment_id=$1 AND cargo_id IS NOT NULL
+                       ) AND status=$3""",
+                    shipment["id"],
+                    expected_to_status,
+                    object_from_status,
+                )
+                if result != f"UPDATE {standalone_count}":
+                    raise ShipmentStatusChangedError()
+
+            consolidation_count = await conn.fetchval(
+                """SELECT count(*) FROM shipment_items
+                   WHERE shipment_id=$1 AND consolidation_id IS NOT NULL""",
+                shipment["id"],
+            )
+            if consolidation_count:
+                result = await conn.execute(
+                    """UPDATE consolidations SET status=$2, updated_at=now()
+                       WHERE id IN (
+                           SELECT consolidation_id FROM shipment_items
+                           WHERE shipment_id=$1 AND consolidation_id IS NOT NULL
+                       ) AND status=$3""",
+                    shipment["id"],
+                    expected_to_status,
+                    object_from_status,
+                )
+                if result != f"UPDATE {consolidation_count}":
+                    raise ShipmentStatusChangedError()
+
+                child_count = await conn.fetchval(
+                    """SELECT count(*) FROM consolidation_items ci
+                       WHERE ci.consolidation_id IN (
+                           SELECT consolidation_id FROM shipment_items
+                           WHERE shipment_id=$1 AND consolidation_id IS NOT NULL
+                       )""",
+                    shipment["id"],
+                )
+                result = await conn.execute(
+                    """UPDATE cargos SET status=$2, updated_at=now()
+                       WHERE id IN (
+                           SELECT ci.cargo_id FROM consolidation_items ci
+                           WHERE ci.consolidation_id IN (
+                               SELECT consolidation_id FROM shipment_items
+                               WHERE shipment_id=$1 AND consolidation_id IS NOT NULL
+                           )
+                       ) AND status=$3""",
+                    shipment["id"],
+                    expected_to_status,
+                    object_from_status,
+                )
+                if result != f"UPDATE {child_count}":
+                    raise ShipmentStatusChangedError()
+
+            return {
+                "shipment": await _get_shipment_by_id(conn, shipment["id"]),
+                "event": event,
+                "created": True,
+            }

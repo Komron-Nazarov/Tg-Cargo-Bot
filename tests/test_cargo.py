@@ -412,6 +412,7 @@ class CargoIntegrationSmokeTests(unittest.TestCase):
                 "004_create_cargos.sql",
                 "005_create_consolidations.sql",
                 "006_create_shipments.sql",
+                "007_create_shipment_events.sql",
             ],
         )
 

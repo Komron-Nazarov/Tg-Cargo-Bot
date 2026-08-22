@@ -12,6 +12,10 @@ CARGO_STATUS_LABELS = {
     STATUS_RECEIVED_CHINA: "Принят на китайском складе",
     STATUS_CONSOLIDATED: "Консолидирован",
     STATUS_SHIPPED_CHINA: "Выехал из Китая",
+    "in_transit": "В пути",
+    "arrived_tajikistan": "Прибыл в Таджикистан",
+    "customs_processing": "На таможенном оформлении",
+    "customs_cleared": "Таможня пройдена",
 }
 CARGO_CODE_RE = re.compile(r"CG\d{6,}")
 

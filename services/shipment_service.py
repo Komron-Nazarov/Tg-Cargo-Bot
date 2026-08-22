@@ -6,6 +6,10 @@ from typing import Any, Mapping, Sequence
 
 from services.cargo_service import normalize_cargo_code
 from services.consolidation_service import normalize_consolidation_code
+from services.shipment_status_service import (
+    format_shipment_history,
+    shipment_status_label,
+)
 
 
 SHIPMENT_CODE_RE = re.compile(r"SH\d{6,}")
@@ -172,8 +176,7 @@ def format_client_shipment(view: Mapping[str, Any], *, notification: bool = Fals
         if view.get("client_volume_m3") is not None
         else "не определён полностью"
     )
-    return "\n".join(
-        [
+    lines = [
             title,
             "",
             f"Shipment ID: <code>{escape(str(view['shipment_code']))}</code>",
@@ -186,12 +189,15 @@ def format_client_shipment(view: Mapping[str, Any], *, notification: bool = Fals
             f"Транспорт: {transport_label(str(view['transport_type']))}",
             f"Reference: {escape(str(view.get('transport_reference') or 'не указан'))}",
             f"Дата выезда: {_date(view.get('departed_at'))}",
-            "Статус: Выехал из Китая",
+            f"Статус: {shipment_status_label(str(view.get('status', 'departed_china')))}",
+            f"Обновлён: {_date(view.get('updated_at'))}",
         ]
-    )
+    if "events" in view:
+        lines.extend(["", format_shipment_history(view, view["events"])])
+    return "\n".join(lines)
 
 
-def format_admin_shipment(shipment: Mapping[str, Any], *, details=None) -> str:
+def format_admin_shipment(shipment: Mapping[str, Any], *, details=None, events=None) -> str:
     lines = [
         f"🚛 Shipment ID: <code>{escape(str(shipment['shipment_code']))}</code>",
         f"Транспорт: {transport_label(str(shipment['transport_type']))}",
@@ -199,7 +205,7 @@ def format_admin_shipment(shipment: Mapping[str, Any], *, details=None) -> str:
         f"Items: {shipment.get('items_count', len(details or []))}",
         f"Клиентов: {shipment.get('clients_count', len({x['client_id'] for x in (details or [])}))}",
         f"Дата выезда: {_date(shipment.get('departed_at'))}",
-        "Статус: Выехал из Китая",
+        f"Статус: {shipment_status_label(str(shipment.get('status', 'departed_china')))}",
     ]
     if details:
         lines.append("")
@@ -214,6 +220,8 @@ def format_admin_shipment(shipment: Mapping[str, Any], *, details=None) -> str:
                 f"Tracking <code>{escape(trackings)}</code> · "
                 f"{_decimal(item['weight_kg'], 3)} кг · мест: {item['pieces_count']}"
             )
+    if events is not None:
+        lines.extend(["", format_shipment_history(shipment, events, admin=True)])
     return "\n".join(lines)
 
 

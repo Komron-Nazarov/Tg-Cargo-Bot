@@ -50,6 +50,7 @@ async def set_commands(bot: Bot, admin_id: int) -> None:
             BotCommand(command="dispatch", description="Оформить выезд из Китая (админ)"),
             BotCommand(command="shipments", description="Последние отправления (админ)"),
             BotCommand(command="shipment", description="Найти отправление (админ)"),
+            BotCommand(command="advance", description="Следующий статус Shipment (админ)"),
         ],
         scope=BotCommandScopeChat(chat_id=admin_id),
     )
