@@ -459,6 +459,7 @@ class ConsolidationIntegrationTests(unittest.TestCase):
                 "005_create_consolidations.sql",
                 "006_create_shipments.sql",
                 "007_create_shipment_events.sql",
+                "008_create_pickup_deliveries.sql",
             ],
         )
 

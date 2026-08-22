@@ -10,6 +10,7 @@ MAIN_MENU_BUTTONS = [
     "🚚 Мои грузы",
     "🔗 Мои консолидации",
     "🚛 Мои отправления",
+    "📍 Моя доставка",
 ]
 
 COUNTRIES = ["🇹🇯 Таджикистан", "🇨🇳 Китай", "🇹🇷 Турция"]
@@ -234,6 +235,47 @@ def shipment_advance_confirm_kb(shipment_code: str) -> InlineKeyboardMarkup:
         callback_data="shipment_advance_confirm:restart",
     )
     builder.button(text="❌ Отмена", callback_data="shipment_advance_confirm:cancel")
+    builder.adjust(1)
+    return builder.as_markup()
+
+
+def pickup_city_kb() -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.button(text="Душанбе", callback_data="pickup_city:dushanbe")
+    builder.button(text="Худжанд", callback_data="pickup_city:khujand")
+    builder.adjust(2)
+    return builder.as_markup()
+
+
+def pickup_confirm_kb() -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.button(text="✅ Создать пункт", callback_data="pickup_accept:create")
+    builder.button(text="❌ Отмена", callback_data="pickup_accept:cancel")
+    builder.adjust(1)
+    return builder.as_markup()
+
+
+def delivery_assign_kb(shipment_code: str) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.button(text="✅ Назначить пункт выдачи", callback_data=f"delivery_assign:{shipment_code}")
+    builder.button(text="❌ Отмена", callback_data="delivery_assign:cancel")
+    builder.adjust(1)
+    return builder.as_markup()
+
+
+def delivery_advance_start_kb(code: str) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.button(text="✅ Продолжить", callback_data=f"delivery_advance_start:{code}")
+    builder.button(text="❌ Отмена", callback_data="delivery_advance_start:cancel")
+    builder.adjust(1)
+    return builder.as_markup()
+
+
+def delivery_advance_confirm_kb(code: str) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.button(text="✅ Подтвердить новый статус", callback_data=f"delivery_advance_accept:{code}")
+    builder.button(text="✏️ Примечание заново", callback_data="delivery_advance_confirm:restart")
+    builder.button(text="❌ Отмена", callback_data="delivery_advance_confirm:cancel")
     builder.adjust(1)
     return builder.as_markup()
 

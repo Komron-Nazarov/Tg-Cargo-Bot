@@ -53,3 +53,22 @@ class ShipmentAdvanceForm(StatesGroup):
     start_confirm = State()
     note = State()
     confirm = State()
+
+
+class PickupPointForm(StatesGroup):
+    city = State()
+    name = State()
+    address = State()
+    phone = State()
+    note = State()
+    confirm = State()
+
+
+class DeliveryAssignForm(StatesGroup):
+    confirm = State()
+
+
+class DeliveryAdvanceForm(StatesGroup):
+    start_confirm = State()
+    note = State()
+    confirm = State()

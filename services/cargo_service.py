@@ -16,6 +16,10 @@ CARGO_STATUS_LABELS = {
     "arrived_tajikistan": "Прибыл в Таджикистан",
     "customs_processing": "На таможенном оформлении",
     "customs_cleared": "Таможня пройдена",
+    "assigned_pickup": "Назначен пункт выдачи",
+    "domestic_transit": "Направлен в город получения",
+    "arrived_pickup": "Прибыл в пункт выдачи",
+    "ready_for_pickup": "Готов к получению",
 }
 CARGO_CODE_RE = re.compile(r"CG\d{6,}")
 
