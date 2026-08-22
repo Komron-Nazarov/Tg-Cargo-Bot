@@ -7,6 +7,7 @@ MAIN_MENU_BUTTONS = [
     "👤 Мой профиль",
     "🏭 Адрес склада в Китае",
     "🔎 Китайские трек-номера",
+    "🚚 Мои грузы",
 ]
 
 COUNTRIES = ["🇹🇯 Таджикистан", "🇨🇳 Китай", "🇹🇷 Турция"]
@@ -88,6 +89,47 @@ def tracking_cancel_confirm_kb(tracking_id: int) -> InlineKeyboardMarkup:
         callback_data=f"tracking_cancel_confirm:{tracking_id}:no",
     )
     builder.adjust(1)
+    return builder.as_markup()
+
+
+def warehouse_start_kb(tracking_id: int) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.button(
+        text="✅ Начать приёмку",
+        callback_data=f"warehouse_start:{tracking_id}",
+    )
+    builder.button(text="❌ Отмена", callback_data="warehouse_start:cancel")
+    builder.adjust(1)
+    return builder.as_markup()
+
+
+def warehouse_photos_done_kb() -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.button(
+        text="✅ Завершить добавление фотографий",
+        callback_data="warehouse_photos:done",
+    )
+    return builder.as_markup()
+
+
+def warehouse_confirm_kb(tracking_id: int) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.button(
+        text="✅ Принять и создать Cargo ID",
+        callback_data=f"warehouse_accept:{tracking_id}",
+    )
+    builder.button(text="✏️ Начать заново", callback_data="warehouse_confirm:restart")
+    builder.button(text="❌ Отмена", callback_data="warehouse_confirm:cancel")
+    builder.adjust(1)
+    return builder.as_markup()
+
+
+def cargo_photos_kb(cargo_code: str) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.button(
+        text="📷 Показать фотографии",
+        callback_data=f"cargo_photos:{cargo_code}",
+    )
     return builder.as_markup()
 
 

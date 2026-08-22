@@ -3,6 +3,7 @@ import asyncpg
 
 STATUS_DECLARED = "declared"
 STATUS_CANCELLED = "cancelled"
+STATUS_RECEIVED = "received"
 
 TRACKING_FIELDS = """
     id, client_id, tracking_number, tracking_number_normalized,

@@ -6,10 +6,12 @@ from typing import Any, Mapping
 
 STATUS_DECLARED = "declared"
 STATUS_CANCELLED = "cancelled"
+STATUS_RECEIVED = "received"
 
 STATUS_LABELS = {
     STATUS_DECLARED: "⏳ Ожидается на складе",
     STATUS_CANCELLED: "❌ Отменён",
+    STATUS_RECEIVED: "✅ Принят на китайском складе",
 }
 
 TRACKING_RE = re.compile(r"(?=.*[A-Z0-9])[A-Z0-9-]{5,64}")

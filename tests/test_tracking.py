@@ -167,6 +167,7 @@ class TrackingServiceTests(unittest.TestCase):
 
         self.assertIn("Ожидается", status_label("declared"))
         self.assertIn("Отменён", status_label("cancelled"))
+        self.assertIn("Принят", status_label("received"))
 
     def test_client_and_admin_formatters(self):
         from services.tracking_service import (

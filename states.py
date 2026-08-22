@@ -19,3 +19,13 @@ class RegistrationForm(StatesGroup):
 class TrackingForm(StatesGroup):
     number = State()
     confirm = State()
+
+
+class WarehouseReceiptForm(StatesGroup):
+    start_confirm = State()
+    description = State()
+    weight = State()
+    volume = State()
+    pieces = State()
+    photos = State()
+    confirm = State()
