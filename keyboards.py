@@ -2,8 +2,8 @@ from aiogram.types import InlineKeyboardMarkup, ReplyKeyboardMarkup
 from aiogram.utils.keyboard import InlineKeyboardBuilder, ReplyKeyboardBuilder
 
 MAIN_MENU_BUTTONS = [
-    "📦 Новая заявка",
-    "📋 Мои заявки",
+    "📦 Новый запрос",
+    "📋 Мои запросы",
     "👤 Мой профиль",
     "🏭 Адрес склада в Китае",
     "🔎 Китайские трек-номера",

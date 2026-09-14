@@ -15,7 +15,7 @@ router = Router()
 logger = logging.getLogger(__name__)
 
 
-@router.message(F.text == "📦 Новая заявка")
+@router.message(F.text.in_({"📦 Новый запрос", "📦 Новая заявка"}))
 async def new_order(message: Message, state: FSMContext, pool):
     if await require_registered_client(message, state, pool) is None:
         return
@@ -26,16 +26,16 @@ async def new_order(message: Message, state: FSMContext, pool):
     )
 
 
-@router.message(F.text == "📋 Мои заявки")
+@router.message(F.text.in_({"📋 Мои запросы", "📋 Мои заявки"}))
 async def my_orders(message: Message, state: FSMContext, pool):
     if await require_registered_client(message, state, pool) is None:
         return
     orders = await order_repository.get_user_orders(pool, message.from_user.id)
     if not orders:
-        await message.answer("У тебя пока нет заявок. Нажми «📦 Новая заявка», чтобы создать первую.")
+        await message.answer("У тебя пока нет запросов. Нажми «📦 Новый запрос», чтобы создать первый.")
         return
 
-    lines = ["📋 Твои заявки:\n"]
+    lines = ["📋 Твои запросы:\n"]
     for order in orders:
         status_label = order_repository.STATUS_LABELS.get(order["status"], order["status"])
         lines.append(
@@ -94,7 +94,7 @@ async def show_confirmation(message: Message, state: FSMContext):
     data = await state.get_data()
     await state.set_state(OrderForm.confirm)
     text = (
-        "Проверь заявку:\n\n"
+        "Проверь запрос:\n\n"
         f"📦 Груз: {data['name']}\n"
         f"⚖️ Вес: {data['weight']} кг\n"
         f"🌍 Страна: {data['country']}\n\n"
@@ -115,7 +115,7 @@ async def process_confirm(
 
     if action == "cancel":
         await state.clear()
-        await callback.message.edit_text("❌ Заявка отменена.")
+        await callback.message.edit_text("❌ Запрос отменён.")
         await callback.answer()
         return
 
@@ -135,14 +135,14 @@ async def process_confirm(
         country=data["country"],
     )
     await state.clear()
-    await callback.message.edit_text(f"✅ Заявка №{order_id} создана! Мы свяжемся с тобой по деталям доставки.")
+    await callback.message.edit_text(f"✅ Запрос №{order_id} создан! Мы свяжемся с тобой по деталям доставки.")
     await callback.answer()
 
     if callback.from_user.id != settings.admin_id:
         try:
             await bot.send_message(
                 settings.admin_id,
-                f"🧠 Новая заявка №{order_id}\n"
+                f"🧠 Новый запрос №{order_id}\n"
                 f"От: @{callback.from_user.username or callback.from_user.id}\n"
                 f"📦 {data['name']}, {data['weight']} кг → {data['country']}",
                 reply_markup=order_status_kb(order_id, "new"),

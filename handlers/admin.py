@@ -80,7 +80,7 @@ async def list_orders(message: Message, pool):
         pool, status=order_repository.STATUS_NEW, limit=10
     )
     if not orders:
-        await message.answer("Новых заявок нет 🎉")
+        await message.answer("Новых запросов нет 🎉")
         return
 
     for order in orders:
@@ -98,7 +98,7 @@ async def change_status(callback: CallbackQuery, bot: Bot, pool):
 
     user_id = await order_repository.update_order_status(pool, order_id, new_status)
     if user_id is None:
-        await callback.answer("Заявка не найдена", show_alert=True)
+        await callback.answer("Запрос не найден", show_alert=True)
         return
 
     status_label = order_repository.STATUS_LABELS.get(new_status, new_status)
@@ -109,7 +109,7 @@ async def change_status(callback: CallbackQuery, bot: Bot, pool):
     await callback.answer("Статус обновлён")
 
     try:
-        await bot.send_message(user_id, f"📦 Статус твоей заявки №{order_id} изменён: {status_label}")
+        await bot.send_message(user_id, f"📦 Статус твоего запроса №{order_id} изменён: {status_label}")
     except Exception:
         logger.exception(
             "Failed to notify user about order status",

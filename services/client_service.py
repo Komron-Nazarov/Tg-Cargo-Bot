@@ -61,14 +61,18 @@ def format_warehouse_address(
     lines = ["🏭 <b>Адрес склада в Китае</b>", ""]
     if recipient and recipient.strip():
         lines.append(f"Получатель: {escape(recipient.strip())}")
-    lines.append(f"Адрес: {escape(address.strip())}")
+    marketplace_address = f"{address.strip()} {client_code}"
+    lines.append(
+        f"Адрес для заказа: <code>{escape(marketplace_address)}</code>"
+    )
     if phone and phone.strip():
         lines.append(f"Телефон: {escape(phone.strip())}")
     lines.extend(
         [
-            f"Client ID: <code>{escape(client_code)}</code>",
+            f"Ваш Client ID: <code>{escape(client_code)}</code>",
             "",
-            "Обязательно укажите Client ID на посылке или в данных получателя.",
+            "Скопируйте адрес целиком: Client ID уже добавлен в его конец. "
+            "По этому коду склад определит владельца груза.",
         ]
     )
     return "\n".join(lines)

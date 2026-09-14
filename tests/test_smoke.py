@@ -223,6 +223,11 @@ class ClientServiceTests(unittest.TestCase):
         self.assertIn("C000007", text)
         self.assertIn("Guangzhou test address", text)
         self.assertIn("Cargo Test", text)
+        self.assertIn(
+            "Адрес для заказа: <code>Guangzhou test address C000007</code>",
+            text,
+        )
+        self.assertIn("Client ID уже добавлен в его конец", text)
 
     def test_unconfigured_warehouse_has_safe_message(self):
         from services.client_service import format_warehouse_address

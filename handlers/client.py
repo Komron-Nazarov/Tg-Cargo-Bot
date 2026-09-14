@@ -97,7 +97,7 @@ async def cmd_cancel(message: Message, state: FSMContext, pool):
         elif is_tracking:
             text = "❌ Добавление трек-номера отменено."
         else:
-            text = "❌ Заявка отменена."
+            text = "❌ Запрос отменён."
         await message.answer(text, reply_markup=main_menu_kb())
     else:
         await message.answer(
