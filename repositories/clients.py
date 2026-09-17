@@ -20,6 +20,23 @@ async def get_client_by_telegram_id(
         )
 
 
+async def get_client_by_code(pool: asyncpg.Pool, client_code: str):
+    async with pool.acquire() as conn:
+        return await conn.fetchrow(
+            f"SELECT {CLIENT_FIELDS} FROM clients WHERE client_code = $1",
+            client_code,
+        )
+
+
+async def list_recent_clients(pool: asyncpg.Pool, limit: int = 20, offset: int = 0):
+    async with pool.acquire() as conn:
+        return await conn.fetch(
+            f"SELECT {CLIENT_FIELDS} FROM clients ORDER BY id DESC LIMIT $1 OFFSET $2",
+            limit,
+            offset,
+        )
+
+
 async def create_client(
     pool: asyncpg.Pool,
     telegram_user_id: int,

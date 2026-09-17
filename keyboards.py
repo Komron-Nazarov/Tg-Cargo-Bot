@@ -11,7 +11,21 @@ MAIN_MENU_BUTTONS = [
     "🔗 Мои консолидации",
     "🚛 Мои отправления",
     "📍 Моя доставка",
+    "📖 Как пользоваться",
 ]
+
+
+def guide_kb(kind: str, index: int) -> InlineKeyboardMarkup:
+    from services.guide_service import ADMIN_GUIDE, CLIENT_GUIDE
+
+    pages = CLIENT_GUIDE if kind == "client" else ADMIN_GUIDE
+    builder = InlineKeyboardBuilder()
+    if index > 0:
+        builder.button(text="⬅️ Назад", callback_data=f"guide:{kind}:{index - 1}")
+    if index + 1 < len(pages):
+        builder.button(text="Далее ➡️", callback_data=f"guide:{kind}:{index + 1}")
+    builder.adjust(2)
+    return builder.as_markup()
 
 COUNTRIES = ["🇹🇯 Таджикистан", "🇨🇳 Китай", "🇹🇷 Турция"]
 
@@ -27,6 +41,8 @@ def main_menu_kb() -> ReplyKeyboardMarkup:
 def registration_prompt_kb() -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.button(text="📝 Зарегистрироваться", callback_data="register:start")
+    builder.button(text="📖 Как это работает", callback_data="guide:client:0")
+    builder.adjust(1)
     return builder.as_markup()
 
 

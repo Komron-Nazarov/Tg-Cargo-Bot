@@ -194,6 +194,26 @@ async def list_recent_cargos(pool: asyncpg.Pool, limit: int = 20):
         )
 
 
+async def list_cargos_by_client_code(
+    pool: asyncpg.Pool, client_code: str, limit: int = 20, offset: int = 0
+):
+    async with pool.acquire() as conn:
+        return await conn.fetch(
+            f"""
+            SELECT {CARGO_SELECT}
+            FROM cargos cg
+            JOIN china_trackings t ON t.id = cg.china_tracking_id
+            JOIN clients c ON c.id = cg.client_id
+            WHERE c.client_code = $1
+            ORDER BY cg.received_at DESC, cg.id DESC
+            LIMIT $2 OFFSET $3
+            """,
+            client_code,
+            limit,
+            offset,
+        )
+
+
 async def get_cargo_by_code(pool: asyncpg.Pool, cargo_code: str):
     async with pool.acquire() as conn:
         return await conn.fetchrow(

@@ -1,4 +1,5 @@
 import logging
+from html import escape
 
 from aiogram import Bot, F, Router
 from aiogram.filters import StateFilter
@@ -10,6 +11,7 @@ from handlers.client import require_registered_client
 from keyboards import confirm_kb, countries_kb, main_menu_kb, order_status_kb
 from repositories import orders as order_repository
 from states import OrderForm
+from services.order_service import normalize_order_country, normalize_order_name, parse_order_weight
 
 router = Router()
 logger = logging.getLogger(__name__)
@@ -30,7 +32,12 @@ async def new_order(message: Message, state: FSMContext, pool):
 async def my_orders(message: Message, state: FSMContext, pool):
     if await require_registered_client(message, state, pool) is None:
         return
-    orders = await order_repository.get_user_orders(pool, message.from_user.id)
+    try:
+        orders = await order_repository.get_user_orders(pool, message.from_user.id)
+    except Exception:
+        logger.exception("Failed to load client requests")
+        await message.answer("Не удалось загрузить запросы. Попробуйте позже.")
+        return
     if not orders:
         await message.answer("У тебя пока нет запросов. Нажми «📦 Новый запрос», чтобы создать первый.")
         return
@@ -39,7 +46,8 @@ async def my_orders(message: Message, state: FSMContext, pool):
     for order in orders:
         status_label = order_repository.STATUS_LABELS.get(order["status"], order["status"])
         lines.append(
-            f"№{order['id']} · {order['name']} · {order['weight']} кг · {order['country']} — {status_label}"
+            f"№{order['id']} · {escape(str(order['name']))} · {order['weight']} кг · "
+            f"{escape(str(order['country']))} — {escape(str(status_label))}"
         )
     await message.answer("\n".join(lines))
 
@@ -48,10 +56,12 @@ async def my_orders(message: Message, state: FSMContext, pool):
 
 @router.message(StateFilter(OrderForm.name))
 async def process_name(message: Message, state: FSMContext):
-    if not message.text or len(message.text) < 2:
-        await message.answer("❌ Название слишком короткое. Введи ещё раз:")
+    try:
+        name = normalize_order_name(message.text or "")
+    except ValueError as exc:
+        await message.answer(f"❌ {escape(str(exc))}. Введи ещё раз:")
         return
-    await state.update_data(name=message.text)
+    await state.update_data(name=name)
     await state.set_state(OrderForm.weight)
     await message.answer("⚖️ Теперь введи вес груза в кг (например: 2.5):")
 
@@ -59,9 +69,7 @@ async def process_name(message: Message, state: FSMContext):
 @router.message(StateFilter(OrderForm.weight))
 async def process_weight(message: Message, state: FSMContext):
     try:
-        weight = float((message.text or "").replace(",", "."))
-        if weight <= 0:
-            raise ValueError
+        weight = parse_order_weight(message.text or "")
     except ValueError:
         await message.answer("❌ Введи число больше нуля, например 2.5")
         return
@@ -79,6 +87,11 @@ async def process_country_button(callback: CallbackQuery, state: FSMContext):
         await callback.answer()
         return
 
+    try:
+        country = normalize_order_country(country)
+    except ValueError:
+        await callback.answer("Некорректная страна.", show_alert=True)
+        return
     await state.update_data(country=country)
     await show_confirmation(callback.message, state)
     await callback.answer()
@@ -86,7 +99,12 @@ async def process_country_button(callback: CallbackQuery, state: FSMContext):
 
 @router.message(StateFilter(OrderForm.country))
 async def process_country_text(message: Message, state: FSMContext):
-    await state.update_data(country=message.text)
+    try:
+        country = normalize_order_country(message.text or "")
+    except ValueError as exc:
+        await message.answer(f"❌ {escape(str(exc))}. Введите страну ещё раз:")
+        return
+    await state.update_data(country=country)
     await show_confirmation(message, state)
 
 
@@ -95,9 +113,9 @@ async def show_confirmation(message: Message, state: FSMContext):
     await state.set_state(OrderForm.confirm)
     text = (
         "Проверь запрос:\n\n"
-        f"📦 Груз: {data['name']}\n"
+        f"📦 Груз: {escape(data['name'])}\n"
         f"⚖️ Вес: {data['weight']} кг\n"
-        f"🌍 Страна: {data['country']}\n\n"
+        f"🌍 Страна: {escape(data['country'])}\n\n"
         "Всё верно?"
     )
     await message.answer(text, reply_markup=confirm_kb())
@@ -112,6 +130,9 @@ async def process_confirm(
     settings: Settings,
 ):
     action = callback.data.split(":", 1)[1]
+    if action not in {"cancel", "restart", "yes"}:
+        await callback.answer("Некорректное действие.", show_alert=True)
+        return
 
     if action == "cancel":
         await state.clear()
@@ -126,14 +147,19 @@ async def process_confirm(
         return
 
     data = await state.get_data()
-    order_id = await order_repository.add_order(
-        pool,
-        user_id=callback.from_user.id,
-        username=callback.from_user.username,
-        name=data["name"],
-        weight=data["weight"],
-        country=data["country"],
-    )
+    try:
+        order_id = await order_repository.add_order(
+            pool,
+            user_id=callback.from_user.id,
+            username=callback.from_user.username,
+            name=data["name"],
+            weight=data["weight"],
+            country=data["country"],
+        )
+    except Exception:
+        logger.exception("Failed to save client request")
+        await callback.answer("Не удалось сохранить запрос. Попробуйте позже.", show_alert=True)
+        return
     await state.clear()
     await callback.message.edit_text(f"✅ Запрос №{order_id} создан! Мы свяжемся с тобой по деталям доставки.")
     await callback.answer()
@@ -143,8 +169,8 @@ async def process_confirm(
             await bot.send_message(
                 settings.admin_id,
                 f"🧠 Новый запрос №{order_id}\n"
-                f"От: @{callback.from_user.username or callback.from_user.id}\n"
-                f"📦 {data['name']}, {data['weight']} кг → {data['country']}",
+                f"От: @{escape(str(callback.from_user.username or callback.from_user.id))}\n"
+                f"📦 {escape(data['name'])}, {data['weight']} кг → {escape(data['country'])}",
                 reply_markup=order_status_kb(order_id, "new"),
             )
         except Exception:

@@ -5,7 +5,7 @@ from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.types import BotCommand, BotCommandScopeChat
 
 from config import Settings
-from handlers import admin, cargo, client, completion, consolidation, delivery, shipment, tracking, user, warehouse
+from handlers import admin, cargo, client, completion, consolidation, delivery, guide, shipment, tracking, user, warehouse
 
 
 def create_bot(settings: Settings) -> Bot:
@@ -24,6 +24,7 @@ def create_dispatcher(settings: Settings) -> Dispatcher:
     dispatcher.include_router(shipment.router)
     dispatcher.include_router(delivery.router)
     dispatcher.include_router(completion.router)
+    dispatcher.include_router(guide.router)
     dispatcher.include_router(client.router)
     dispatcher.include_router(tracking.router)
     dispatcher.include_router(cargo.router)
@@ -35,11 +36,17 @@ async def set_commands(bot: Bot, admin_id: int) -> None:
     await bot.set_my_commands([
         BotCommand(command="start", description="Начать"),
         BotCommand(command="cancel", description="Отменить текущее действие"),
+        BotCommand(command="guide", description="Как пользоваться ботом"),
     ])
     await bot.set_my_commands(
         [
             BotCommand(command="start", description="Начать"),
             BotCommand(command="cancel", description="Отменить текущее действие"),
+            BotCommand(command="guide", description="Инструкция клиенту"),
+            BotCommand(command="admin_guide", description="Инструкция администратору"),
+            BotCommand(command="clients", description="Последние клиенты (админ)"),
+            BotCommand(command="client", description="Поиск по Client ID (админ)"),
+            BotCommand(command="client_cargos", description="Грузы по Client ID (админ)"),
             BotCommand(command="orders", description="Список новых запросов (админ)"),
             BotCommand(command="trackings", description="Ожидаемые трек-номера (админ)"),
             BotCommand(command="tracking", description="Поиск трек-номера (админ)"),

@@ -7,6 +7,16 @@ from typing import Any, Mapping, Optional
 PHONE_SEPARATORS_RE = re.compile(r"[\s()\-.]")
 
 
+def parse_page(value: str) -> int:
+    raw = value.strip()
+    if not raw.isascii() or not raw.isdecimal() or not 1 <= len(raw) <= 4:
+        raise ValueError("Номер страницы должен быть от 1 до 9999")
+    page = int(raw)
+    if page < 1:
+        raise ValueError("Номер страницы должен быть от 1 до 9999")
+    return page
+
+
 def normalize_phone(value: str) -> str:
     raw = value.strip()
     if not raw:

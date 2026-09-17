@@ -250,6 +250,7 @@ async def registration_confirm(callback: CallbackQuery, state: FSMContext, pool)
         "Сохраните его: Client ID нужно указывать на посылках для китайского склада."
     )
     await callback.message.answer("Выберите нужный раздел:", reply_markup=main_menu_kb())
+    await callback.message.answer("Как всё работает — /guide (по желанию).")
     await callback.answer()
 
 
