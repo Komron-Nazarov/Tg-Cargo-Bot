@@ -8,6 +8,7 @@ from aiogram.types import CallbackQuery, Message, ReplyKeyboardRemove
 
 from config import Settings
 from keyboards import (
+    demo_welcome_kb,
     main_menu_kb,
     phone_kb,
     registration_cities_kb,
@@ -55,21 +56,14 @@ async def require_registered_client(message: Message, state: FSMContext, pool):
 @router.message(CommandStart())
 async def cmd_start(message: Message, state: FSMContext, pool):
     await state.clear()
-    client = await get_registered_client(pool, message.from_user.id)
-    if client is None:
-        await message.answer(
-            "🚚 Привет! Это Cargo Bot.\n\n"
-            "Для работы с доставкой сначала зарегистрируйтесь. После регистрации "
-            "вы получите персональный Client ID для китайского склада.",
-            reply_markup=registration_prompt_kb(),
-        )
-        return
-
     await message.answer(
-        f"🚚 С возвращением! Ваш Client ID: "
-        f"<code>{escape(str(client['client_code']))}</code>\n\n"
-        "Выберите нужный раздел:",
-        reply_markup=main_menu_kb(),
+        "🚚 Добро пожаловать в Cargo Bot!\n\n"
+        "Хотите сначала пройти учебный заказ и увидеть весь путь груза — "
+        "от выбора товара до выдачи и оплаты? Это только тренажёр: "
+        "ничего не покупается и не записывается в базу.\n\n"
+        "Можно пропустить и сразу пользоваться ботом. "
+        "Обучение доступно повторно по /demo в любое время.",
+        reply_markup=demo_welcome_kb(),
     )
 
 

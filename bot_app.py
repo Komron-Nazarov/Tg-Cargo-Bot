@@ -5,7 +5,7 @@ from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.types import BotCommand, BotCommandScopeChat
 
 from config import Settings
-from handlers import admin, calculator, cargo, client, completion, consolidation, delivery, guide, shipment, tracking, user, warehouse
+from handlers import admin, calculator, cargo, client, completion, consolidation, delivery, demo, guide, shipment, tracking, user, warehouse
 
 
 def create_bot(settings: Settings) -> Bot:
@@ -18,6 +18,7 @@ def create_bot(settings: Settings) -> Bot:
 def create_dispatcher(settings: Settings) -> Dispatcher:
     dispatcher = Dispatcher(storage=MemoryStorage())
     dispatcher["settings"] = settings
+    dispatcher.include_router(demo.router)
     dispatcher.include_router(admin.router)
     dispatcher.include_router(warehouse.router)
     dispatcher.include_router(consolidation.router)
@@ -39,6 +40,7 @@ async def set_commands(bot: Bot, admin_id: int) -> None:
         BotCommand(command="cancel", description="Отменить текущее действие"),
         BotCommand(command="guide", description="Как пользоваться ботом"),
         BotCommand(command="calc", description="Рассчитать доставку по весу"),
+        BotCommand(command="demo", description="Пройти учебный заказ"),
     ])
     await bot.set_my_commands(
         [
@@ -46,6 +48,7 @@ async def set_commands(bot: Bot, admin_id: int) -> None:
             BotCommand(command="cancel", description="Отменить текущее действие"),
             BotCommand(command="guide", description="Инструкция клиенту"),
             BotCommand(command="calc", description="Калькулятор доставки"),
+            BotCommand(command="demo", description="Учебный заказ без реальных записей"),
             BotCommand(command="admin_guide", description="Инструкция администратору"),
             BotCommand(command="clients", description="Последние клиенты (админ)"),
             BotCommand(command="client", description="Поиск по Client ID (админ)"),

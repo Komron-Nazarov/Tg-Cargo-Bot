@@ -12,8 +12,29 @@ MAIN_MENU_BUTTONS = [
     "🚛 Мои отправления",
     "📍 Моя доставка",
     "🧮 Калькулятор доставки",
+    "🎓 Учебный заказ",
     "📖 Как пользоваться",
 ]
+
+
+def demo_welcome_kb() -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.button(text="🎓 Пройти учебный заказ", callback_data="demo:start")
+    builder.button(text="➡️ Пропустить и пользоваться ботом", callback_data="demo:skip")
+    builder.adjust(1)
+    return builder.as_markup()
+
+
+def demo_step_kb(state) -> InlineKeyboardMarkup:
+    from services.demo_service import LAST_STEP, demo_actions
+
+    builder = InlineKeyboardBuilder()
+    for label, callback_data in demo_actions(state):
+        builder.button(text=label, callback_data=callback_data)
+    if state.step != LAST_STEP:
+        builder.button(text="🚪 Выйти из обучения", callback_data="demo:exit")
+    builder.adjust(1)
+    return builder.as_markup()
 
 
 def guide_kb(kind: str, index: int) -> InlineKeyboardMarkup:
