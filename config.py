@@ -1,5 +1,6 @@
 import os
 from dataclasses import dataclass
+from decimal import Decimal, InvalidOperation
 from typing import Mapping, Optional
 from urllib.parse import urlparse
 
@@ -27,6 +28,7 @@ class Settings:
     china_warehouse_address: Optional[str]
     china_warehouse_recipient: Optional[str]
     china_warehouse_phone: Optional[str]
+    price_per_kg_usd: Decimal
 
     @property
     def webhook_url(self) -> str:
@@ -86,6 +88,15 @@ def load_settings(environ: Optional[Mapping[str, str]] = None) -> Settings:
     webhook_base_url = environ.get("WEBHOOK_BASE_URL", "").strip().rstrip("/") or None
     webhook_secret = environ.get("WEBHOOK_SECRET", "").strip() or None
 
+    try:
+        price_per_kg_usd = Decimal(environ.get("PRICE_PER_KG_USD", "2.8").strip())
+    except InvalidOperation as exc:
+        raise RuntimeError("PRICE_PER_KG_USD должен быть положительным числом") from exc
+    if not price_per_kg_usd.is_finite() or not 0 < price_per_kg_usd <= Decimal("9999"):
+        raise RuntimeError("PRICE_PER_KG_USD должен быть положительным числом не больше 9999")
+    if price_per_kg_usd.as_tuple().exponent < -4:
+        raise RuntimeError("PRICE_PER_KG_USD допускает не более 4 знаков после запятой")
+
     if deploy_mode == WEBHOOK_MODE:
         if webhook_base_url is None:
             raise RuntimeError("WEBHOOK_BASE_URL обязателен в webhook-режиме")
@@ -122,4 +133,5 @@ def load_settings(environ: Optional[Mapping[str, str]] = None) -> Settings:
         china_warehouse_address=environ.get("CHINA_WAREHOUSE_ADDRESS", "").strip() or None,
         china_warehouse_recipient=environ.get("CHINA_WAREHOUSE_RECIPIENT", "").strip() or None,
         china_warehouse_phone=environ.get("CHINA_WAREHOUSE_PHONE", "").strip() or None,
+        price_per_kg_usd=price_per_kg_usd,
     )

@@ -20,7 +20,7 @@ from services.client_service import (
     format_warehouse_address,
     normalize_phone,
 )
-from states import RegistrationForm, TrackingForm
+from states import PriceCalculatorForm, RegistrationForm, TrackingForm
 
 router = Router()
 logger = logging.getLogger(__name__)
@@ -85,6 +85,11 @@ async def cmd_cancel(message: Message, state: FSMContext, pool):
                 "Сейчас нечего отменять 🙂",
                 reply_markup=registration_prompt_kb(),
             )
+        return
+
+    if current_state.startswith(PriceCalculatorForm.__name__):
+        await state.clear()
+        await message.answer("❌ Расчёт отменён.")
         return
 
     is_registration = current_state.startswith(RegistrationForm.__name__)

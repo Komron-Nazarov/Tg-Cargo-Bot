@@ -22,7 +22,8 @@ class GuideTests(unittest.TestCase):
         self.assertIn("dispatcher.include_router(guide.router)", source)
         self.assertIn("📖 Как пользоваться", MAIN_MENU_BUTTONS)
         self.assertEqual(guide_kb("client", 0).inline_keyboard[0][0].callback_data, "guide:client:1")
-        self.assertEqual(registration_prompt_kb().inline_keyboard[1][0].callback_data, "guide:client:0")
+        self.assertEqual(registration_prompt_kb().inline_keyboard[1][0].callback_data, "calc:start")
+        self.assertEqual(registration_prompt_kb().inline_keyboard[2][0].callback_data, "guide:client:0")
 
 
 class OrderValidationTests(unittest.TestCase):

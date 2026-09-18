@@ -11,6 +11,7 @@ MAIN_MENU_BUTTONS = [
     "🔗 Мои консолидации",
     "🚛 Мои отправления",
     "📍 Моя доставка",
+    "🧮 Калькулятор доставки",
     "📖 Как пользоваться",
 ]
 
@@ -41,6 +42,7 @@ def main_menu_kb() -> ReplyKeyboardMarkup:
 def registration_prompt_kb() -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.button(text="📝 Зарегистрироваться", callback_data="register:start")
+    builder.button(text="🧮 Посчитать доставку", callback_data="calc:start")
     builder.button(text="📖 Как это работает", callback_data="guide:client:0")
     builder.adjust(1)
     return builder.as_markup()

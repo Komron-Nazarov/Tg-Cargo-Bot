@@ -8,6 +8,10 @@ class OrderForm(StatesGroup):
     confirm = State()
 
 
+class PriceCalculatorForm(StatesGroup):
+    weight = State()
+
+
 class RegistrationForm(StatesGroup):
     full_name = State()
     phone = State()
