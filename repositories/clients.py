@@ -37,6 +37,25 @@ async def list_recent_clients(pool: asyncpg.Pool, limit: int = 20, offset: int =
         )
 
 
+async def search_clients(pool: asyncpg.Pool, query: str, limit: int = 20):
+    """Search by public ID, name or phone; keep the query parameterized."""
+    escaped = query.replace("!", "!!").replace("%", "!%").replace("_", "!_")
+    async with pool.acquire() as conn:
+        return await conn.fetch(
+            f"""
+            SELECT {CLIENT_FIELDS}
+            FROM clients
+            WHERE client_code ILIKE $1 ESCAPE '!'
+               OR full_name ILIKE $1 ESCAPE '!'
+               OR phone ILIKE $1 ESCAPE '!'
+            ORDER BY id DESC
+            LIMIT $2
+            """,
+            f"%{escaped}%",
+            limit,
+        )
+
+
 async def create_client(
     pool: asyncpg.Pool,
     telegram_user_id: int,

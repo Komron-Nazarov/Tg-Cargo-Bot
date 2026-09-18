@@ -49,6 +49,36 @@ async def get_user_orders(pool: asyncpg.Pool, user_id: int):
         )
 
 
+async def get_recent_user_orders(pool: asyncpg.Pool, user_id: int, limit: int = 5):
+    async with pool.acquire() as conn:
+        return await conn.fetch(
+            """
+            SELECT id, name, weight, country, status, created_at
+            FROM orders
+            WHERE user_id = $1
+            ORDER BY id DESC
+            LIMIT $2
+            """,
+            user_id,
+            limit,
+        )
+
+
+async def get_order_for_admin(pool: asyncpg.Pool, order_id: int):
+    async with pool.acquire() as conn:
+        return await conn.fetchrow(
+            """
+            SELECT o.id, o.user_id, o.username, o.name, o.weight, o.country,
+                   o.status, o.created_at,
+                   c.client_code, c.full_name, c.phone, c.delivery_city
+            FROM orders o
+            LEFT JOIN clients c ON c.telegram_user_id = o.user_id
+            WHERE o.id = $1
+            """,
+            order_id,
+        )
+
+
 async def get_orders_by_status(
     pool: asyncpg.Pool,
     status: Optional[str] = None,
@@ -58,10 +88,12 @@ async def get_orders_by_status(
         if status:
             return await conn.fetch(
                 """
-                SELECT id, user_id, username, name, weight, country, status
-                FROM orders
-                WHERE status = $1
-                ORDER BY id DESC
+                SELECT o.id, o.user_id, o.username, o.name, o.weight, o.country,
+                       o.status, c.client_code, c.full_name, c.phone, c.delivery_city
+                FROM orders o
+                LEFT JOIN clients c ON c.telegram_user_id = o.user_id
+                WHERE o.status = $1
+                ORDER BY o.id DESC
                 LIMIT $2
                 """,
                 status,
@@ -69,9 +101,11 @@ async def get_orders_by_status(
             )
         return await conn.fetch(
             """
-            SELECT id, user_id, username, name, weight, country, status
-            FROM orders
-            ORDER BY id DESC
+            SELECT o.id, o.user_id, o.username, o.name, o.weight, o.country,
+                   o.status, c.client_code, c.full_name, c.phone, c.delivery_city
+            FROM orders o
+            LEFT JOIN clients c ON c.telegram_user_id = o.user_id
+            ORDER BY o.id DESC
             LIMIT $1
             """,
             limit,

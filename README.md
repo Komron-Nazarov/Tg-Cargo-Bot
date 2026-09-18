@@ -74,10 +74,14 @@ Telegram-бот на Python для регистрации клиентов и о
 ```text
 /trackings
 /clients
+/clients 2
+/client_search <имя, телефон или Client ID>
 /client <Client ID>
 /client_cargos <Client ID>
 /admin_guide
 /tracking <трек-номер или Client ID>
+/orders
+/order <номер запроса>
 /receive <трек-номер>
 /cargos
 /cargo <Cargo ID>
@@ -101,6 +105,16 @@ Telegram-бот на Python для регистрации клиентов и о
 /payments
 /payment <Payment ID или Delivery ID>
 ```
+
+`/clients` показывает зарегистрированных клиентов по страницам, `/client_search` ищет по
+имени, телефону или Client ID. Команда `/client C000001` показывает контакты и город
+клиента, а также последние 5 трек-номеров, Cargo и запросов этого Telegram-пользователя.
+Для последних 20 треков используйте `/tracking C000001`, для грузов с постраничной
+навигацией — `/client_cargos C000001`. `/trackings` показывает последние 20 треков, которые ещё
+ожидаются на складе; `/orders` — только новые запросы с контактами клиента, а
+`/order 123` — конкретный запрос любого статуса. Эти команды доступны только
+пользователю с `ADMIN_ID`. Заказы в таблице `orders` пока связаны с клиентом через
+Telegram ID, сама таблица не меняется.
 
 ## Client ID, Tracking Number, Cargo ID, Consolidation ID, Shipment ID и Payment ID
 

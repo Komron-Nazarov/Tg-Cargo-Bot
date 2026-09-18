@@ -1,4 +1,5 @@
 import logging
+from html import escape
 
 from aiogram import Bot, F, Router
 from aiogram.filters import Command, CommandObject
@@ -18,6 +19,7 @@ from services.tracking_service import (
 )
 from services.cargo_service import format_admin_cargo
 from services.client_service import parse_page
+from services.admin_overview_service import format_admin_order, format_client_overview
 
 logger = logging.getLogger(__name__)
 
@@ -48,9 +50,34 @@ async def list_clients(message: Message, command: CommandObject, pool):
             f"<code>{escape(str(client['client_code']))}</code> · "
             f"{escape(str(client['full_name']))} · {escape(str(client['delivery_city']))}"
         )
-    lines.append("Карточка: /client C000001 · грузы: /client_cargos C000001")
+    lines.append("Поиск: /client_search имя или телефон · карточка: /client C000001")
     if len(clients) == 20 and page < 9999:
         lines.append(f"Далее: /clients {page + 1}")
+    await message.answer("\n".join(lines))
+
+
+@router.message(Command("client_search"))
+async def search_clients(message: Message, command: CommandObject, pool):
+    query = (command.args or "").strip()
+    if len(query) < 2 or len(query) > 100:
+        await message.answer("Использование: /client_search &lt;имя, телефон или Client ID&gt; (2–100 символов)")
+        return
+    try:
+        clients = await client_repository.search_clients(pool, query, limit=20)
+    except Exception:
+        logger.exception("Failed to search clients")
+        await message.answer("Не удалось найти клиентов. Попробуйте позже.")
+        return
+    if not clients:
+        await message.answer("Клиенты не найдены.")
+        return
+    lines = ["🔍 <b>Найденные клиенты (до 20):</b>"]
+    for client in clients:
+        code = escape(str(client["client_code"]))
+        lines.append(
+            f"<code>{code}</code> · {escape(str(client['full_name']))} · "
+            f"{escape(str(client['phone']))} · /client {code}"
+        )
     await message.answer("\n".join(lines))
 
 
@@ -63,6 +90,16 @@ async def find_client(message: Message, command: CommandObject, pool):
         return
     try:
         client = await client_repository.get_client_by_code(pool, code)
+        if client is not None:
+            trackings = await tracking_repository.search_trackings_by_client_code(
+                pool, code, limit=5
+            )
+            cargos = await cargo_repository.list_cargos_by_client_code(
+                pool, code, limit=5, offset=0
+            )
+            orders = await order_repository.get_recent_user_orders(
+                pool, client["telegram_user_id"], limit=5
+            )
     except Exception:
         logger.exception("Failed to load client by code")
         await message.answer("Не удалось загрузить клиента. Попробуйте позже.")
@@ -70,14 +107,7 @@ async def find_client(message: Message, command: CommandObject, pool):
     if client is None:
         await message.answer("Client ID не найден. Не назначайте груз наугад.")
         return
-    await message.answer(
-        f"👤 <b>Клиент <code>{escape(code)}</code></b>\n"
-        f"Имя: {escape(str(client['full_name']))}\n"
-        f"Телефон: {escape(str(client['phone']))}\n"
-        f"Город: {escape(str(client['delivery_city']))}\n"
-        f"Активен: {'да' if client['is_active'] else 'нет'}\n\n"
-        f"Треки: /tracking {escape(code)}\nГрузы: /client_cargos {escape(code)}"
-    )
+    await message.answer(format_client_overview(client, trackings, cargos, orders))
 
 
 @router.message(Command("client_cargos"))
@@ -180,12 +210,35 @@ async def list_orders(message: Message, pool):
         return
 
     for order in orders:
-        text = (
-            f"№{order['id']} от @{escape(str(order['username'] or order['user_id']))}\n"
-            f"📦 {escape(str(order['name']))} · {order['weight']} кг → "
-            f"{escape(str(order['country']))}"
+        await message.answer(
+            format_admin_order(order),
+            reply_markup=order_status_kb(order["id"], order["status"]),
         )
-        await message.answer(text, reply_markup=order_status_kb(order["id"], order["status"]))
+
+
+@router.message(Command("order"))
+async def find_order(message: Message, command: CommandObject, pool):
+    raw_id = (command.args or "").strip()
+    if not raw_id.isascii() or not raw_id.isdecimal() or not 1 <= len(raw_id) <= 10:
+        await message.answer("Использование: /order &lt;номер запроса&gt;")
+        return
+    order_id = int(raw_id)
+    if order_id <= 0:
+        await message.answer("Использование: /order &lt;номер запроса&gt;")
+        return
+    try:
+        order = await order_repository.get_order_for_admin(pool, order_id)
+    except Exception:
+        logger.exception("Failed to load request by ID", extra={"order_id": order_id})
+        await message.answer("Не удалось загрузить запрос. Попробуйте позже.")
+        return
+    if order is None:
+        await message.answer("Запрос не найден.")
+        return
+    await message.answer(
+        format_admin_order(order),
+        reply_markup=order_status_kb(order["id"], order["status"]),
+    )
 
 
 @router.callback_query(F.data.startswith("status:"))
