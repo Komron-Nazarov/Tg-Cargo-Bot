@@ -1,5 +1,7 @@
 import unittest
 from datetime import datetime, timezone
+from types import SimpleNamespace
+from unittest.mock import ANY, AsyncMock, patch
 
 
 class AcquireContext:
@@ -293,6 +295,62 @@ class TrackingRepositoryTests(unittest.IsolatedAsyncioTestCase):
         self.assertIsNone(
             await cancel_client_tracking(self.pool, created["id"], 1)
         )
+
+
+class AdminTrackingFlowTests(unittest.IsolatedAsyncioTestCase):
+    async def test_admin_adds_tracking_by_client_code_and_client_is_notified(self):
+        from handlers.admin import add_tracking_for_client
+
+        client = {
+            "id": 7,
+            "client_code": "C000007",
+            "telegram_user_id": 700,
+            "full_name": "Test Client",
+            "is_active": True,
+        }
+        tracking = {"id": 11, "tracking_number": "LP123456789CN"}
+        message = SimpleNamespace(answer=AsyncMock())
+        bot = SimpleNamespace(send_message=AsyncMock())
+        command = SimpleNamespace(args="c000007 lp123456789cn")
+
+        with (
+            patch(
+                "handlers.admin.client_repository.get_client_by_code",
+                new=AsyncMock(return_value=client),
+            ) as get_client,
+            patch(
+                "handlers.admin.tracking_repository.create_tracking",
+                new=AsyncMock(return_value=tracking),
+            ) as create_tracking,
+        ):
+            await add_tracking_for_client(message, command, object(), bot)
+
+        get_client.assert_awaited_once_with(ANY, "C000007")
+        create_tracking.assert_awaited_once_with(
+            ANY,
+            client_id=7,
+            tracking_number="LP123456789CN",
+            tracking_number_normalized="LP123456789CN",
+        )
+        self.assertIn("Трек-номер добавлен компанией", message.answer.call_args.args[0])
+        bot.send_message.assert_awaited_once()
+        self.assertEqual(bot.send_message.call_args.args[0], 700)
+        self.assertIn("Мои трек-номера", bot.send_message.call_args.args[1])
+
+    async def test_client_tracking_screen_is_read_only(self):
+        from handlers.tracking import _send_client_trackings
+
+        message = SimpleNamespace(answer=AsyncMock())
+        rows = [{"tracking_number": "LP123456789CN", "status": "declared"}]
+        with patch(
+            "handlers.tracking.tracking_repository.list_client_trackings",
+            new=AsyncMock(return_value=rows),
+        ):
+            await _send_client_trackings(message, {"id": 7}, object())
+
+        combined = " ".join(call.args[0] for call in message.answer.await_args_list)
+        self.assertIn("Номера добавляет компания", combined)
+        self.assertNotIn("Добавить трек", combined)
 
 
 if __name__ == "__main__":

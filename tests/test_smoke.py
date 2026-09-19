@@ -227,6 +227,8 @@ class ClientServiceTests(unittest.TestCase):
             "Адрес для заказа: <code>Guangzhou test address C000007</code>",
             text,
         )
+        copied_address = text.split("Адрес для заказа: <code>", 1)[1].split("</code>", 1)[0]
+        self.assertTrue(copied_address.endswith(" C000007"))
         self.assertIn("Client ID уже добавлен в его конец", text)
 
     def test_unconfigured_warehouse_has_safe_message(self):

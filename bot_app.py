@@ -57,6 +57,8 @@ async def set_commands(bot: Bot, admin_id: int) -> None:
             BotCommand(command="orders", description="Список новых запросов (админ)"),
             BotCommand(command="order", description="Найти запрос по номеру (админ)"),
             BotCommand(command="trackings", description="Ожидаемые трек-номера (админ)"),
+            BotCommand(command="tracking_add", description="Добавить трек клиенту (админ)"),
+            BotCommand(command="tracking_cancel", description="Отменить ошибочный трек (админ)"),
             BotCommand(command="tracking", description="Поиск трек-номера (админ)"),
             BotCommand(command="receive", description="Принять посылку на склад (админ)"),
             BotCommand(command="cargos", description="Последние Cargo (админ)"),

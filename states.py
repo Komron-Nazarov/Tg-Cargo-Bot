@@ -20,11 +20,6 @@ class RegistrationForm(StatesGroup):
     confirm = State()
 
 
-class TrackingForm(StatesGroup):
-    number = State()
-    confirm = State()
-
-
 class WarehouseReceiptForm(StatesGroup):
     start_confirm = State()
     description = State()

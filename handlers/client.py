@@ -21,7 +21,7 @@ from services.client_service import (
     format_warehouse_address,
     normalize_phone,
 )
-from states import PriceCalculatorForm, RegistrationForm, TrackingForm
+from states import PriceCalculatorForm, RegistrationForm
 
 router = Router()
 logger = logging.getLogger(__name__)
@@ -87,14 +87,11 @@ async def cmd_cancel(message: Message, state: FSMContext, pool):
         return
 
     is_registration = current_state.startswith(RegistrationForm.__name__)
-    is_tracking = current_state.startswith(TrackingForm.__name__)
     await state.clear()
     client = await get_registered_client(pool, message.from_user.id)
     if client is not None:
         if is_registration:
             text = "❌ Регистрация отменена."
-        elif is_tracking:
-            text = "❌ Добавление трек-номера отменено."
         else:
             text = "❌ Запрос отменён."
         await message.answer(text, reply_markup=main_menu_kb())

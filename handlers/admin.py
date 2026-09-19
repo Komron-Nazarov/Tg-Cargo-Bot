@@ -159,6 +159,139 @@ async def list_trackings(message: Message, pool):
         await message.answer(format_admin_tracking(tracking))
 
 
+@router.message(Command("tracking_add"))
+async def add_tracking_for_client(
+    message: Message,
+    command: CommandObject,
+    pool,
+    bot: Bot,
+):
+    parts = (command.args or "").split(maxsplit=1)
+    if len(parts) != 2:
+        await message.answer(
+            "Использование: /tracking_add &lt;Client ID&gt; &lt;трек-номер&gt;\n"
+            "Пример: /tracking_add C000001 LP123456789CN"
+        )
+        return
+    try:
+        client_code = normalize_client_code(parts[0])
+        tracking_number = normalize_tracking_number(parts[1])
+    except ValueError as exc:
+        await message.answer(f"❌ {escape(str(exc))}")
+        return
+
+    try:
+        client = await client_repository.get_client_by_code(pool, client_code)
+        if client is None or not client["is_active"]:
+            await message.answer("Активный клиент с таким Client ID не найден.")
+            return
+        tracking = await tracking_repository.create_tracking(
+            pool,
+            client_id=client["id"],
+            tracking_number=tracking_number,
+            tracking_number_normalized=tracking_number,
+        )
+        if tracking is None:
+            existing = await tracking_repository.search_tracking_by_number(
+                pool, tracking_number
+            )
+            owner_code = existing["client_code"] if existing is not None else "другому клиенту"
+            await message.answer(
+                "Этот трек-номер уже зарегистрирован за Client ID: "
+                f"<code>{escape(str(owner_code))}</code>. Новая запись не создана."
+            )
+            return
+    except Exception:
+        logger.exception(
+            "Failed to add tracking for client",
+            extra={"client_code": client_code},
+        )
+        await message.answer("Не удалось добавить трек-номер. Попробуйте позже.")
+        return
+
+    await message.answer(
+        "✅ Трек-номер добавлен компанией.\n\n"
+        f"Client ID: <code>{escape(client_code)}</code>\n"
+        f"Клиент: {escape(str(client['full_name']))}\n"
+        f"Трек: <code>{escape(tracking_number)}</code>\n"
+        "Статус: ⏳ Ожидается на складе\n\n"
+        f"Приёмка после фактического поступления: /receive {escape(tracking_number)}"
+    )
+    try:
+        await bot.send_message(
+            client["telegram_user_id"],
+            "🔎 <b>Компания добавила китайский трек-номер</b>\n\n"
+            f"Трек: <code>{escape(tracking_number)}</code>\n"
+            "Статус: ⏳ Ожидается на складе\n\n"
+            "Следить за ним можно в разделе «🔎 Мои трек-номера». "
+            "После приёмки фотографии и Cargo ID появятся в «🚚 Мои грузы»."
+        )
+    except Exception:
+        logger.exception(
+            "Failed to notify client about admin tracking",
+            extra={"tracking_id": tracking["id"], "client_code": client_code},
+        )
+
+
+@router.message(Command("tracking_cancel"))
+async def cancel_tracking_by_admin(
+    message: Message,
+    command: CommandObject,
+    pool,
+    bot: Bot,
+):
+    try:
+        tracking_number = normalize_tracking_number(command.args or "")
+    except ValueError:
+        await message.answer(
+            "Использование: /tracking_cancel &lt;трек-номер&gt;"
+        )
+        return
+    try:
+        existing = await tracking_repository.search_tracking_by_number(
+            pool, tracking_number
+        )
+        if existing is None:
+            await message.answer("Трек-номер не найден.")
+            return
+        if existing["status"] != tracking_repository.STATUS_DECLARED:
+            await message.answer(
+                "Отменить можно только номер со статусом «Ожидается на складе»."
+            )
+            return
+        cancelled = await tracking_repository.cancel_client_tracking(
+            pool, existing["id"], existing["client_id"]
+        )
+    except Exception:
+        logger.exception(
+            "Failed to cancel tracking by admin",
+            extra={"tracking_number": tracking_number},
+        )
+        await message.answer("Не удалось отменить трек-номер. Попробуйте позже.")
+        return
+    if cancelled is None:
+        await message.answer("Статус уже изменился. Обновите данные и попробуйте снова.")
+        return
+
+    await message.answer(
+        "❌ Трек-номер отменён компанией и сохранён в истории.\n\n"
+        f"Client ID: <code>{escape(str(existing['client_code']))}</code>\n"
+        f"Трек: <code>{escape(tracking_number)}</code>"
+    )
+    try:
+        await bot.send_message(
+            existing["telegram_user_id"],
+            "❌ Компания отменила китайский трек-номер:\n"
+            f"<code>{escape(tracking_number)}</code>\n\n"
+            "Если это неожиданно, свяжитесь с компанией."
+        )
+    except Exception:
+        logger.exception(
+            "Failed to notify client about cancelled tracking",
+            extra={"tracking_id": existing["id"]},
+        )
+
+
 @router.message(Command("tracking"))
 async def search_tracking(message: Message, command: CommandObject, pool):
     query = (command.args or "").strip()
